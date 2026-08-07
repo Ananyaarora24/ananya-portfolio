@@ -1,5 +1,5 @@
-const MODEL = "claude-sonnet-5";
-const MAX_TOKENS = 1000;
+const MODEL = "openai/gpt-oss-120b";
+const MAX_COMPLETION_TOKENS = 1000;
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_SYSTEM_LENGTH = 8000;
@@ -7,7 +7,7 @@ const MAX_SYSTEM_LENGTH = 8000;
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  if (!env.ANTHROPIC_API_KEY) {
+  if (!env.GROQ_API_KEY) {
     return json({ error: "Chat is not configured on this deployment." }, 503);
   }
 
@@ -38,28 +38,38 @@ export async function onRequestPost(context) {
     }
   }
 
-  const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+  const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
+      Authorization: `Bearer ${env.GROQ_API_KEY}`,
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      max_completion_tokens: MAX_COMPLETION_TOKENS,
+      messages: [
+        { role: "system", content: system },
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+      ],
     }),
   });
 
-  if (!anthropicRes.ok) {
-    const detail = await anthropicRes.text();
+  if (!groqRes.ok) {
+    const detail = await groqRes.text();
     return json({ error: "Upstream chat request failed", detail }, 502);
   }
 
-  const data = await anthropicRes.json();
-  return json(data, 200);
+  const data = await groqRes.json();
+  const raw = data.choices?.[0]?.message?.content || "";
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+  } catch {
+    parsed = { reply: raw || "Sorry, something went wrong parsing that response.", widget: null };
+  }
+
+  return json(parsed, 200);
 }
 
 function json(obj, status) {

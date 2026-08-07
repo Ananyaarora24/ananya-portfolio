@@ -293,14 +293,11 @@ export default function Portfolio() {
         }),
       });
       const data = await res.json();
-      const raw = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
-      let parsed;
-      try {
-        parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
-      } catch {
-        parsed = { reply: raw || "Sorry, something went wrong parsing that response.", widget: null };
+      if (!res.ok) {
+        setMessages((prev) => [...prev, { role: "assistant", content: data.error || "Something went wrong.", widget: null }]);
+        return;
       }
-      setMessages((prev) => [...prev, { role: "assistant", content: parsed.reply, widget: parsed.widget }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply, widget: data.widget }]);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Couldn't reach the assistant just now — please try again.", widget: null }]);
     } finally {
