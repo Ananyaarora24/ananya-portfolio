@@ -61,15 +61,38 @@ export async function onRequestPost(context) {
 
   const data = await groqRes.json();
   const raw = data.choices?.[0]?.message?.content || "";
+  const cleaned = raw.replace(/```json|```/g, "").trim();
 
-  let parsed;
-  try {
-    parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
-  } catch {
-    parsed = { reply: raw || "Sorry, something went wrong parsing that response.", widget: null };
-  }
+  const parsed = extractReplyJson(cleaned) || {
+    reply: cleaned || "Sorry, something went wrong parsing that response.",
+    widget: null,
+  };
 
   return json(parsed, 200);
+}
+
+// The model is expected to reply with only a JSON object, but it sometimes
+// prefaces it with stray prose. Try a straight parse first, then fall back
+// to pulling out the {...} substring so that leading text doesn't leak into
+// the displayed reply.
+function extractReplyJson(text) {
+  const tryParse = (str) => {
+    try {
+      const obj = JSON.parse(str);
+      return obj && typeof obj.reply === "string" ? obj : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const direct = tryParse(text);
+  if (direct) return direct;
+
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+
+  return tryParse(text.slice(start, end + 1));
 }
 
 function json(obj, status) {

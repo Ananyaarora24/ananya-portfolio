@@ -103,6 +103,75 @@ async function fetchGithubProjects() {
     });
 }
 
+// Manually maintained — LinkedIn has no public API for fetching a user's
+// posts, so this list is updated by hand whenever Ananya posts something
+// worth surfacing. Newest first.
+const POSTS = [
+  {
+    title: "Attending the Claude Impact Lab in San Francisco",
+    summary: "Spent the day at Anthropic's Claude Impact Lab in SF, learning from builders experimenting with AI and swapping ideas with the community.",
+    date: "Aug 2026",
+    link: "https://www.linkedin.com/feed/update/urn:li:activity:7491890734128623616/",
+    image: null,
+  },
+  {
+    title: "Moved to San Francisco to start the next chapter",
+    summary: "After graduating summa cum laude from ASU, moved to SF to be closer to the tech community — kicked things off at an \"Agents That Pay\" event on agentic payments infrastructure.",
+    date: "Aug 2026",
+    link: "https://www.linkedin.com/feed/update/urn:li:activity:7491194696707379200/",
+    image: "/linkedin/moved-to-sf.jpg",
+  },
+  {
+    title: "Graduated from Arizona State University 🎓",
+    summary: "Graduated summa cum laude with a B.S. in Computer Science and a 3.93 GPA, capping four years of leadership with WiCS and the Coalition of International Students.",
+    date: "Jun 2026",
+    link: "https://www.linkedin.com/feed/update/urn:li:activity:7467379819509436416/",
+    image: "/linkedin/graduation.jpg",
+  },
+  {
+    title: "Wrapped up her ASU Capstone project",
+    summary: "Delivered the DigiClips AWS Lightsail capstone project, gaining hands-on experience with AWS deployment, HTTPS/SSL, reverse proxies, and production support.",
+    date: "May 2026",
+    link: "https://www.linkedin.com/feed/update/urn:li:activity:7460095715202035712/",
+    image: "/linkedin/capstone.jpg",
+  },
+  {
+    title: "🚀 VoiceGuide — AI navigation for the visually impaired",
+    summary: "Built an AI-powered web app with teammates that narrates surroundings in real time using OpenAI Vision, Whisper, and TTS, helping blind and low-vision users navigate independently.",
+    date: "Apr 2026",
+    link: "https://www.linkedin.com/feed/update/urn:li:activity:7448037094490308608/",
+    image: "/linkedin/voiceguide-demo.jpg",
+  },
+  {
+    title: "Named to the Dean's List — Fall 2025",
+    summary: "Recognized for a 4.27 GPA at ASU's Ira A. Fulton Schools of Engineering while balancing coursework with leadership and volunteering.",
+    date: "Jan 2026",
+    link: "https://www.linkedin.com/feed/update/urn:li:activity:7416856556333350912/",
+    image: "/linkedin/deans-list.jpg",
+  },
+  {
+    title: "Volunteering with JA BizTown",
+    summary: "Spent the day helping 4th and 5th graders run simulated businesses through Junior Achievement's BizTown program, teaching teamwork and financial literacy.",
+    date: "Jan 2026",
+    link: "https://www.linkedin.com/feed/update/urn:li:activity:7416139330693431296/",
+    image: "/linkedin/ja-biztown.jpg",
+  },
+  {
+    title: "✨ Reflecting on a semester as WiCS Mentorship Director ✨",
+    summary: "Presented at the WiCS Final Semester Banquet after a semester guiding five mentee teams, plus a visit to Intel's office that shaped her interest in cloud engineering.",
+    date: "Nov 2025",
+    link: "https://www.linkedin.com/feed/update/urn:li:activity:7399201411168862209/",
+    image: "/linkedin/wics-banquet.jpg",
+  },
+  {
+    title: "🌟 Grateful, Inspired, and Empowered after GHC 2025 🌟",
+    summary: "Spent four days at the Grace Hopper Celebration in Chicago, connecting with professionals from Amazon, Cloudflare, NVIDIA, and more around cloud computing and AI.",
+    date: "Nov 2025",
+    link: "https://www.linkedin.com/feed/update/urn:li:activity:7394026167994867712/",
+    image: "/linkedin/ghc2025.jpg",
+  },
+];
+
 const EXPERIENCE = [
   { role: "Entrepreneurship Student Grader", org: "Arizona State University", dates: "Aug 2025 - May 2026", desc: "Evaluated 100-150+ assignments weekly with AI-assisted tools; contributed to a 10% improvement in course performance across 50+ students." },
   { role: "Intern", org: "Principled Innovation Academy, ASU", dates: "May 2025 - Jul 2025", desc: "Built an AI-powered platform automating 500+ internship applications; NLP pipelines hit 95% accuracy in resume parsing and role matching." },
@@ -125,6 +194,9 @@ She recently moved to San Francisco after graduating and is open to full-time so
 CONTACT & LINKS: GitHub: https://github.com/Ananyaarora24 | LinkedIn: https://www.linkedin.com/in/ananyaaro/ | Email: ananya.arora.tech@gmail.com
 When asked for her GitHub, LinkedIn, portfolio links, or how to contact/reach her, state the relevant link(s) directly in your reply (write out the full URL) and set widget to {"type": "links"}.
 
+RECENT LINKEDIN POSTS: ${POSTS.map((p) => `"${p.title}" (${p.date}) — ${p.summary}`).join(" | ")}
+When asked about her recent LinkedIn posts, activity, or what she's been posting about, summarize from the list above and set widget to {"type": "posts"}.
+
 Available project names (use EXACTLY these strings when referencing projects, pulled live from her GitHub): ${projectNames}
 This list reflects ALL ${projects.length} of her current public, non-fork GitHub repositories, synced live moments ago. If asked how many repos or projects she has, answer with exactly ${projects.length} — do not hedge or say there might be more.
 Available experience entries: ${EXPERIENCE.map((e) => e.role + " at " + e.org).join(", ")}
@@ -138,6 +210,7 @@ WIDGET is one of:
 - {"type": "timeline"} — when asked about her career, experience, or work history
 - {"type": "comparison", "names": ["Exact Project Name", "Exact Project Name"]} — exactly 2-3 names, only when asked to compare projects
 - {"type": "links"} — when asked for GitHub, LinkedIn, portfolio, or contact info
+- {"type": "posts"} — when asked about her recent LinkedIn posts or activity
 
 If a question can't be answered from the facts above, set widget to null and say you don't have that detail, suggesting they email ananya.arora.tech@gmail.com.
 `.trim();
@@ -222,6 +295,33 @@ function LinksWidget() {
           padding: "8px 12px", textDecoration: "none",
         }}>
           <Icon size={14} color={COLORS.teal} /> {label}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function PostsWidget() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+      {POSTS.map((p) => (
+        <a key={p.title} href={p.link} target="_blank" rel="noreferrer" style={{
+          display: "flex", gap: 12, background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10,
+          padding: 14, textDecoration: "none",
+        }}>
+          {p.image && (
+            <img src={p.image} alt="" style={{
+              width: 64, height: 64, objectFit: "cover", borderRadius: 8, flexShrink: 0,
+              border: `1px solid ${COLORS.border}`,
+            }} />
+          )}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13.5, color: "white" }}>{p.title}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: COLORS.teal, flexShrink: 0 }}>{p.date}</div>
+            </div>
+            <div style={{ fontSize: 12.5, color: COLORS.slateMuted, marginTop: 4, lineHeight: 1.4 }}>{p.summary}</div>
+          </div>
         </a>
       ))}
     </div>
@@ -388,6 +488,9 @@ export default function Portfolio() {
                     )}
                     {m.role === "assistant" && m.widget?.type === "links" && (
                       <div style={{ width: "85%" }}><LinksWidget /></div>
+                    )}
+                    {m.role === "assistant" && m.widget?.type === "posts" && (
+                      <div style={{ width: "85%" }}><PostsWidget /></div>
                     )}
                   </div>
                 ))}
