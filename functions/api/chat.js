@@ -1,8 +1,8 @@
 const MODEL = "openai/gpt-oss-120b";
-const MAX_COMPLETION_TOKENS = 1000;
+const MAX_COMPLETION_TOKENS = 1600;
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 2000;
-const MAX_SYSTEM_LENGTH = 8000;
+const MAX_SYSTEM_LENGTH = 12000;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
