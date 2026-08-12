@@ -223,6 +223,19 @@ const STARTERS = [
   "Does she know AWS?",
 ];
 
+const TOP_SKILLS = ["Python", "Java", "AWS", "Cloudflare Workers", "React", "SQL", "MongoDB", "TensorFlow", "OpenCV", "Git"];
+
+const FEATURED_NAMES = ["VoiceGuide", "SimplyGraph", "Feedback Intelligence Dashboard"];
+
+function SectionLabel({ children }) {
+  return (
+    <div style={{
+      fontFamily: "'JetBrains Mono', monospace", fontSize: 11.5, fontWeight: 500, letterSpacing: 0.5,
+      textTransform: "uppercase", color: COLORS.slateMuted, marginBottom: 12,
+    }}>{children}</div>
+  );
+}
+
 function ProjectCard({ project, onOpen }) {
   return (
     <button onClick={() => onOpen(project.name)} style={{
@@ -445,22 +458,81 @@ export default function Portfolio() {
         </div>
 
         {empty ? (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
-            <div style={{ width: "100%", maxWidth: 620, textAlign: "center" }}>
-              <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30, color: "white", marginBottom: 8 }}>
-                Ask me about Ananya
-              </h1>
-              <p style={{ color: COLORS.slateMuted, fontSize: 14.5, marginBottom: 28 }}>
-                CS graduate · AI, cloud, and backend systems · San Francisco
-              </p>
-              <ChatInput input={input} setInput={setInput} onSend={() => send()} loading={loading} />
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 18 }}>
-                {STARTERS.map((s) => (
-                  <button key={s} className="chip" onClick={() => send(s)} style={{
-                    fontSize: 13, color: COLORS.slate, background: COLORS.bgCard, border: `1px solid ${COLORS.border}`,
-                    borderRadius: 20, padding: "8px 14px", cursor: "pointer",
-                  }}>{s}</button>
-                ))}
+          <div style={{ flex: 1, overflowY: "auto", padding: "48px 24px 80px" }}>
+            <div style={{ width: "100%", maxWidth: 880, margin: "0 auto" }}>
+              {/* Hero */}
+              <div style={{ textAlign: "center", marginBottom: 48 }}>
+                <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 34, color: "white", marginBottom: 8 }}>
+                  Ananya Arora
+                </h1>
+                <p style={{ color: COLORS.teal, fontSize: 14.5, fontFamily: "'JetBrains Mono', monospace", marginBottom: 14 }}>
+                  CS graduate · AI, cloud, and backend systems · San Francisco
+                </p>
+                <p style={{ color: COLORS.slate, fontSize: 14.5, lineHeight: 1.6, maxWidth: 560, margin: "0 auto" }}>
+                  Summa cum laude B.S. in Computer Science from Arizona State University (3.93 GPA), now building AI
+                  and cloud products in San Francisco. Open to full-time software engineering and AI roles.
+                </p>
+                <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
+                  <a href="mailto:ananya.arora.tech@gmail.com" style={{
+                    display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500, color: COLORS.bg,
+                    background: COLORS.amber, borderRadius: 8, padding: "9px 16px", textDecoration: "none",
+                  }}><Mail size={14} /> Email</a>
+                  <a href="https://www.linkedin.com/in/ananyaaro/" target="_blank" rel="noreferrer" style={{
+                    display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.slate,
+                    background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: "9px 16px", textDecoration: "none",
+                  }}><Linkedin size={14} color={COLORS.teal} /> LinkedIn</a>
+                  <a href="https://github.com/Ananyaarora24" target="_blank" rel="noreferrer" style={{
+                    display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.slate,
+                    background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: "9px 16px", textDecoration: "none",
+                  }}><Github size={14} color={COLORS.teal} /> GitHub</a>
+                </div>
+              </div>
+
+              {/* Skills */}
+              <div style={{ marginBottom: 44 }}>
+                <SectionLabel>Skills</SectionLabel>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {TOP_SKILLS.map((s) => (
+                    <span key={s} style={{
+                      fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: COLORS.teal,
+                      background: "rgba(94,234,212,0.08)", border: `1px solid ${COLORS.border}`, padding: "5px 10px", borderRadius: 6,
+                    }}>{s}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Featured projects */}
+              <div style={{ marginBottom: 44 }}>
+                <SectionLabel>Featured Projects</SectionLabel>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+                  {projects.filter((p) => FEATURED_NAMES.includes(p.name)).map((p) => (
+                    <ProjectCard key={p.name} project={p} onOpen={setSidePanel} />
+                  ))}
+                </div>
+                <button className="chip" onClick={() => send("Show me all her projects")} style={{
+                  marginTop: 12, fontSize: 12.5, color: COLORS.slateMuted, background: "none", border: "none",
+                  cursor: "pointer", padding: 0, textDecoration: "underline",
+                }}>See all {projects.length} projects →</button>
+              </div>
+
+              {/* Experience */}
+              <div style={{ marginBottom: 48 }}>
+                <SectionLabel>Experience</SectionLabel>
+                <TimelineWidget />
+              </div>
+
+              {/* Chat entry point */}
+              <div style={{ borderTop: `1px solid ${COLORS.border}`, paddingTop: 32 }}>
+                <SectionLabel>Have a specific question? Ask the AI</SectionLabel>
+                <ChatInput input={input} setInput={setInput} onSend={() => send()} loading={loading} />
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+                  {STARTERS.map((s) => (
+                    <button key={s} className="chip" onClick={() => send(s)} style={{
+                      fontSize: 13, color: COLORS.slate, background: COLORS.bgCard, border: `1px solid ${COLORS.border}`,
+                      borderRadius: 20, padding: "8px 14px", cursor: "pointer",
+                    }}>{s}</button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
