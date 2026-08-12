@@ -83,7 +83,49 @@ export async function onRequestPost(context) {
     parsed = unwrapped || { reply: "Sorry, that answer got cut off — could you ask again?", widget: null };
   }
 
+  // The model also sometimes forgets to put the widget in its proper field
+  // and instead appends a stray {"widget": {...}} (or bare {"type": "..."})
+  // blob onto the end of the reply text. Pull it out and use it as the real
+  // widget instead of showing raw JSON to the user.
+  parsed = siphonTrailingWidgetJson(parsed);
+
   return json(parsed, 200);
+}
+
+function siphonTrailingWidgetJson(parsed) {
+  if (typeof parsed.reply !== "string") return parsed;
+  const trimmed = parsed.reply.replace(/\s+$/, "");
+  if (!trimmed.endsWith("}")) return parsed;
+
+  let depth = 0;
+  let start = -1;
+  for (let i = trimmed.length - 1; i >= 0; i--) {
+    if (trimmed[i] === "}") depth++;
+    else if (trimmed[i] === "{") {
+      depth--;
+      if (depth === 0) {
+        start = i;
+        break;
+      }
+    }
+  }
+  if (start === -1) return parsed;
+
+  let obj;
+  try {
+    obj = JSON.parse(trimmed.slice(start));
+  } catch {
+    return parsed;
+  }
+
+  const extractedWidget = obj && typeof obj === "object" ? (obj.widget || (obj.type ? obj : null)) : null;
+  if (!extractedWidget) return parsed;
+
+  const cleanReply = trimmed.slice(0, start).trim();
+  return {
+    reply: cleanReply || parsed.reply,
+    widget: parsed.widget || extractedWidget,
+  };
 }
 
 // The model is expected to reply with only a JSON object, but it sometimes
