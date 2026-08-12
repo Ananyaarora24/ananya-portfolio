@@ -1,5 +1,9 @@
 const MODEL = "openai/gpt-oss-120b";
-const MAX_COMPLETION_TOKENS = 1600;
+// Groq's on-demand tier caps this key at 8000 tokens/minute, charged against
+// (prompt tokens + max_completion_tokens) per request, not actual output —
+// kept below the prior 1600 to leave headroom for more than one detailed
+// question per minute without cutting a real answer short.
+const MAX_COMPLETION_TOKENS = 1300;
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_SYSTEM_LENGTH = 12000;
@@ -56,6 +60,9 @@ export async function onRequestPost(context) {
 
   if (!groqRes.ok) {
     const detail = await groqRes.text();
+    if (groqRes.status === 429 || detail.includes("rate_limit_exceeded")) {
+      return json({ error: "Getting a lot of questions right now — please wait a few seconds and try again.", detail }, 429);
+    }
     return json({ error: "Upstream chat request failed", detail }, 502);
   }
 
@@ -63,10 +70,18 @@ export async function onRequestPost(context) {
   const raw = data.choices?.[0]?.message?.content || "";
   const cleaned = raw.replace(/```json|```/g, "").trim();
 
-  const parsed = extractReplyJson(cleaned) || {
+  let parsed = extractReplyJson(cleaned) || {
     reply: cleaned || "Sorry, something went wrong parsing that response.",
     widget: null,
   };
+
+  // The model occasionally re-wraps its own JSON envelope inside the "reply"
+  // string itself. If what's left still looks like raw JSON, don't show it —
+  // fall back to a clean message rather than leak broken syntax to the user.
+  if (typeof parsed.reply === "string" && /^\s*\{\s*"reply"\s*:/.test(parsed.reply)) {
+    const unwrapped = extractReplyJson(parsed.reply);
+    parsed = unwrapped || { reply: "Sorry, that answer got cut off — could you ask again?", widget: null };
+  }
 
   return json(parsed, 200);
 }
