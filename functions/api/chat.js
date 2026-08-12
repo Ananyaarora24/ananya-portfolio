@@ -1,13 +1,8 @@
 const MODEL = "openai/gpt-oss-120b";
-// Groq's on-demand tier caps this key at 8000 tokens/minute, and that limit
-// is charged against (prompt tokens + max_completion_tokens) per request, not
-// actual output — so this cap is kept below the old 1900 to leave headroom
-// for more than one request per minute, but not so low that a genuinely
-// detailed structured answer gets cut off mid-generation.
-const MAX_COMPLETION_TOKENS = 1300;
+const MAX_COMPLETION_TOKENS = 1600;
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 2000;
-const MAX_SYSTEM_LENGTH = 14000;
+const MAX_SYSTEM_LENGTH = 12000;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -61,9 +56,6 @@ export async function onRequestPost(context) {
 
   if (!groqRes.ok) {
     const detail = await groqRes.text();
-    if (groqRes.status === 429 || detail.includes("rate_limit_exceeded")) {
-      return json({ error: "Getting a lot of questions right now — please wait a few seconds and try again.", detail }, 429);
-    }
     return json({ error: "Upstream chat request failed", detail }, 502);
   }
 
@@ -71,19 +63,10 @@ export async function onRequestPost(context) {
   const raw = data.choices?.[0]?.message?.content || "";
   const cleaned = raw.replace(/```json|```/g, "").trim();
 
-  let parsed = extractReplyJson(cleaned) || {
+  const parsed = extractReplyJson(cleaned) || {
     reply: cleaned || "Sorry, something went wrong parsing that response.",
     widget: null,
   };
-
-  // The model occasionally re-wraps its own JSON envelope inside the "reply"
-  // string itself (worse under a tight token budget, where it can also cut
-  // off mid-wrap). If what's left still looks like raw JSON, don't show it —
-  // fall back to a clean message rather than leak broken syntax to the user.
-  if (typeof parsed.reply === "string" && /^\s*\{\s*"reply"\s*:/.test(parsed.reply)) {
-    const unwrapped = extractReplyJson(parsed.reply);
-    parsed = unwrapped || { reply: "Sorry, that answer got cut off — could you ask again?", widget: null };
-  }
 
   return json(parsed, 200);
 }

@@ -80,9 +80,9 @@ const SKIP_SLUGS = new Set([
   "LAHacksChatbot-Deploy", GITHUB_USER,
 ]);
 
-const FALLBACK_PROJECTS = Object.entries(CURATED).map(([slug, p]) => ({
+const FALLBACK_PROJECTS = Object.values(CURATED).map((p) => ({
   ...p,
-  link: `https://github.com/${GITHUB_USER}/${slug}`,
+  link: `https://github.com/${GITHUB_USER}`,
 }));
 
 async function fetchGithubProjects() {
@@ -218,21 +218,13 @@ function normalizeChatText(text) {
 
 function buildSystemPrompt(projects) {
   const projectSummaries = projects
-    .map((p) => {
-      const relatedPost = POSTS.find(
-        (post) => post.title.toLowerCase().includes(p.name.toLowerCase()) && p.name.length > 3
-      );
-      const postLine = relatedPost
-        ? ` Related LinkedIn post: "${relatedPost.title}" (${relatedPost.date}) — ${relatedPost.link}`
-        : "";
-      return `- ${p.name}${p.date ? ` (${p.date})` : ""}: ${p.desc} Stack: ${p.stack.join(", ") || "n/a"}. GitHub: ${p.link}.${postLine}`;
-    })
+    .map((p) => `- ${p.name}${p.date ? ` (${p.date})` : ""}: ${p.desc} Stack: ${p.stack.join(", ") || "n/a"}.`)
     .join("\n");
 
   return `
 You are the AI assistant embedded in Ananya Arora's portfolio site. Visitors — often recruiters — chat with you to learn about her in depth. Answer confidently and specifically, like someone who knows her work well.
 
-Respond ONLY using the facts below. Never invent projects, employers, dates, or LinkedIn posts. Never state a specific metric, percentage, statistic, or user-study result unless it appears verbatim in the facts below — if no metric is given for something, describe it qualitatively instead of making one up. Never invent teammate names or "challenges faced" anecdotes that aren't written below — if asked about who she worked with or what challenges came up and it isn't documented here, say plainly that the specific detail isn't published on this site and suggest emailing ananya.arora.tech@gmail.com, rather than fabricating something to sound complete.
+Respond ONLY using the facts below. Never invent projects, employers, dates, numbers, or LinkedIn posts.
 
 EDUCATION: ${EDUCATION.school}, ${EDUCATION.location} — ${EDUCATION.degree}, ${EDUCATION.dates}, ${EDUCATION.gpa}.
 CERTIFICATIONS: ${CERTIFICATIONS.map((c) => `${c.name} (${c.org}, ${c.date})`).join(", ")}.
@@ -246,7 +238,7 @@ ${LEADERSHIP.map((l) => `- ${l.role}, ${l.org} (${l.dates}): ${l.desc}`).join("\
 EXPERIENCE (full detail — draw on this for any specific question about a role):
 ${EXPERIENCE.map((e) => `- ${e.role} at ${e.org} (${e.dates}): ${e.desc}`).join("\n")}
 
-PROJECTS (full detail — draw on this for any specific question about a project; each entry includes its real GitHub URL and, where one exists, a related LinkedIn post URL — use these literal URLs when answering, never a placeholder or a made-up link):
+PROJECTS (full detail — draw on this for any specific question about a project; cite concrete stack/architecture details and outcomes rather than just repeating the tagline):
 ${projectSummaries}
 This list reflects ALL ${projects.length} of her current public, non-fork GitHub repositories, synced live moments ago. If asked how many repos or projects she has, answer with exactly ${projects.length} — do not hedge or say there might be more.
 
@@ -255,23 +247,18 @@ She recently moved to San Francisco after graduating summa cum laude and is open
 CONTACT & LINKS: GitHub: https://github.com/Ananyaarora24 | LinkedIn: https://www.linkedin.com/in/ananyaaro/ | Email: ananya.arora.tech@gmail.com
 When asked for her GitHub, LinkedIn, portfolio links, or how to contact/reach her, state the relevant link(s) directly in your reply (write out the full URL) and set widget to {"type": "links"}.
 
-RECENT LINKEDIN POSTS (use these as concrete, timely examples when relevant — reference the post by title/date AND its URL rather than gesturing at "her LinkedIn" vaguely):
-${POSTS.map((p) => `- "${p.title}" (${p.date}) — ${p.summary} URL: ${p.link}`).join("\n")}
+RECENT LINKEDIN POSTS (use these as concrete, timely examples when relevant — reference the post by title/date rather than gesturing at "her LinkedIn" vaguely):
+${POSTS.map((p) => `- "${p.title}" (${p.date}) — ${p.summary}`).join("\n")}
 When asked about her recent LinkedIn posts, activity, or what she's been posting about, summarize from the list above and set widget to {"type": "posts"}.
 
-RESPONSE FORMAT:
-- Broad/overview questions → 2-4 plain sentences, third person, no headers/bullets.
-- Specific "explain / tell me more / walk me through / compare" questions about one or more projects → one-sentence intro, then real newlines between only the sections below you have real content for (skip a section rather than padding it; for a comparison, repeat the section block once per project, each starting with its own "**Project Name**" line on its own):
-  **What it does** — 1-2 sentences.
-  **Tech stack** — "- " bullets of the real stack items.
-  **Skills applied** — "- " bullets of concrete skills/techniques implied only by that project's stack/description.
-  **Built with** — one sentence, only if the post/description mentions collaborators; say generically "built with a small team," never invent names.
-  **Links** — "- GitHub: <literal URL>" and, if one is listed for that project, "- LinkedIn post: <literal URL>".
-- The same header + "- " bullet style helps for certification/education/role questions too.
-- Every sentence traceable to a fact above, no filler. Always third person.
+RESPONSE DEPTH — this matters:
+- Broad/overview questions ("what does she do", "tell me about her") → keep it to 2-4 sentences, third person.
+- Specific questions, or "tell me more" / "explain" / "walk me through" about ONE project, her certification, her education, a specific skill, or a specific role → write a genuinely detailed answer: 2-4 short paragraphs with a real blank line between each paragraph (inside the JSON string, that means an actual newline-newline break, not the literal characters backslash-n), covering what it does or did, how it was built (real stack/architecture detail from PROJECTS or EXPERIENCE above), and a concrete metric or outcome. Where it fits naturally, tie in a specific recent LinkedIn post (by title) or a specific project detail as a real example — never gesture vaguely at "her GitHub" or "her LinkedIn" without citing something concrete from the lists above.
+- Never pad with generic filler ("she is passionate about technology") — every sentence should carry a specific fact from the lists above.
+- Always third person, always grounded only in the facts above.
 
 Respond with ONLY valid JSON (no markdown fences, no preamble), matching exactly this shape:
-{"reply": "the answer, following the RESPONSE FORMAT rules above", "widget": WIDGET}
+{"reply": "the answer, following the RESPONSE DEPTH rules above", "widget": WIDGET}
 
 WIDGET is one of:
 - null (for general questions with no specific project/timeline/contact focus)
@@ -293,71 +280,6 @@ const STARTERS = [
 ];
 
 const FEATURED_NAMES = ["VoiceGuide", "SimplyGraph", "Feedback Intelligence Dashboard"];
-
-// Minimal markdown-lite renderer for assistant chat replies: "- " bullets,
-// "**bold**" section headers, markdown links, and bare URLs auto-linked.
-// Keeps the model's structured output (headers/bullets/links) readable
-// without pulling in a full markdown dependency.
-const INLINE_TOKEN_RE = /(\[[^\]]+\]\([^)]+\))|(\*\*[^*]+\*\*)|(https?:\/\/[^\s)]+)/g;
-
-function renderInline(text, keyPrefix) {
-  const nodes = [];
-  let lastIndex = 0;
-  let match;
-  let i = 0;
-  INLINE_TOKEN_RE.lastIndex = 0;
-  while ((match = INLINE_TOKEN_RE.exec(text)) !== null) {
-    if (match.index > lastIndex) nodes.push(text.slice(lastIndex, match.index));
-    const token = match[0];
-    if (token.startsWith("[")) {
-      const m = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-      nodes.push(m ? (
-        <a key={`${keyPrefix}-${i++}`} href={m[2]} target="_blank" rel="noreferrer" style={{ color: COLORS.teal }}>{m[1]}</a>
-      ) : token);
-    } else if (token.startsWith("**")) {
-      nodes.push(<strong key={`${keyPrefix}-${i++}`} style={{ color: "white" }}>{token.slice(2, -2)}</strong>);
-    } else {
-      nodes.push(<a key={`${keyPrefix}-${i++}`} href={token} target="_blank" rel="noreferrer" style={{ color: COLORS.teal, wordBreak: "break-all" }}>{token}</a>);
-    }
-    lastIndex = INLINE_TOKEN_RE.lastIndex;
-  }
-  if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
-  return nodes;
-}
-
-function RichText({ text }) {
-  const lines = text.split("\n");
-  const blocks = [];
-  let list = null;
-  const flushList = () => { if (list) { blocks.push(list); list = null; } };
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (line.startsWith("- ") || line.startsWith("• ")) {
-      if (!list) list = { type: "ul", items: [] };
-      list.items.push(line.replace(/^[-•]\s+/, ""));
-    } else {
-      flushList();
-      blocks.push({ type: line ? "p" : "space", text: line });
-    }
-  }
-  flushList();
-
-  return (
-    <div>
-      {blocks.map((b, i) => {
-        if (b.type === "space") return <div key={i} style={{ height: 4 }} />;
-        if (b.type === "ul") {
-          return (
-            <ul key={i} style={{ margin: "2px 0 8px", paddingLeft: 18, listStyleType: "disc" }}>
-              {b.items.map((item, j) => <li key={j} style={{ marginBottom: 3, display: "list-item" }}>{renderInline(item, `${i}-${j}`)}</li>)}
-            </ul>
-          );
-        }
-        return <p key={i} style={{ margin: "0 0 8px" }}>{renderInline(b.text, `${i}`)}</p>;
-      })}
-    </div>
-  );
-}
 
 function SectionLabel({ children }) {
   return (
@@ -734,10 +656,9 @@ export default function Portfolio() {
                     <div style={{
                       maxWidth: "85%", background: m.role === "user" ? COLORS.amber : COLORS.bgCard,
                       color: m.role === "user" ? COLORS.bg : COLORS.slate,
-                      padding: "10px 14px", borderRadius: 12, fontSize: 14.5, lineHeight: 1.6,
-                      whiteSpace: m.role === "user" ? "pre-wrap" : "normal",
+                      padding: "10px 14px", borderRadius: 12, fontSize: 14.5, lineHeight: 1.6, whiteSpace: "pre-wrap",
                     }}>
-                      {m.role === "assistant" ? <RichText text={m.content} /> : m.content}
+                      {m.content}
                     </div>
                     {m.role === "assistant" && m.widget?.type === "projects" && (
                       <div style={{ width: "85%" }}><ProjectsWidget names={m.widget.names} onOpen={setSidePanel} projects={projects} /></div>
