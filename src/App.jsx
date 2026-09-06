@@ -113,6 +113,13 @@ async function fetchGithubProjects() {
 // worth surfacing. Newest first.
 const POSTS = [
   {
+    title: "Frontier Signals #01: Infrastructure Behind Physical AI",
+    summary: "Attended an evening at the AWS Builder Loft in San Francisco exploring Physical AI — infrastructure, perception, reasoning, simulation, and deployment — with speakers from OpenAI, Midjourney, Meta AI, and Collinear Labs.",
+    date: "Aug 2026",
+    link: "https://www.linkedin.com/feed/update/urn:li:activity:7493121569737822208/",
+    image: null,
+  },
+  {
     title: "Attending the Claude Impact Lab in San Francisco",
     summary: "Spent the day at Anthropic's Claude Impact Lab in SF, learning from builders experimenting with AI and swapping ideas with the community.",
     date: "Aug 2026",
@@ -198,7 +205,8 @@ const EDUCATION = {
 };
 
 const CERTIFICATIONS = [
-  { name: "AWS Certified Cloud Practitioner", org: "Amazon Web Services", date: "2025" },
+  { name: "AWS Certified Cloud Practitioner", org: "Amazon Web Services", date: "2025", url: "https://www.credly.com/badges/4f070e36-cbae-411c-97ba-09b8f04507b3/linked_in_profile" },
+  { name: "Unconscious Bias", org: "LinkedIn Learning", date: "2025", url: "https://www.linkedin.com/learning/certificates/8f6971cec9551939b8aaaae48bcd3f846fc78b3741847aac1221e40f5620184d" },
 ];
 
 const SKILL_GROUPS = [
@@ -600,7 +608,13 @@ export default function Portfolio() {
                   <SectionLabel>Certifications</SectionLabel>
                   {CERTIFICATIONS.map((c) => (
                     <div key={c.name} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 14 }}>
-                      <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13.5, color: "white" }}>{c.name}</div>
+                      {c.url ? (
+                        <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13.5, color: "white", textDecoration: "none" }}>
+                          {c.name}
+                        </a>
+                      ) : (
+                        <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13.5, color: "white" }}>{c.name}</div>
+                      )}
                       <div style={{ fontSize: 12, color: COLORS.slateMuted, marginTop: 3 }}>{c.org} · {c.date}</div>
                     </div>
                   ))}
