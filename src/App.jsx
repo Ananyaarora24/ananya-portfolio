@@ -254,7 +254,12 @@ function normalizeChatText(text) {
 
 function buildSystemPrompt(projects) {
   const projectSummaries = projects
-    .map((p) => `- ${p.name}${p.date ? ` (${p.date})` : ""}: ${p.desc} Stack: ${p.stack.join(", ") || "n/a"}.`)
+    .map((p) => {
+      const base = `- ${p.name}${p.date ? ` (${p.date})` : ""}: ${p.desc} Stack: ${p.stack.join(", ") || "n/a"}.`;
+      if (!p.caseStudy) return base;
+      const cs = p.caseStudy;
+      return `${base}\n  Engineering story — Problem: ${cs.problem} What she built: ${cs.build} Challenge: ${cs.challenge} Result: ${cs.result}${p.archFlow ? ` Architecture: ${p.archFlow.join(" → ")}.` : ""}`;
+    })
     .join("\n");
 
   return `
@@ -309,7 +314,7 @@ If a question can't be answered from the facts above, set widget to null and say
 }
 
 const STARTERS = [
-  "Explain VoiceGuide in detail",
+  "What's the engineering story behind VoiceGuide?",
   "Walk me through her experience",
   "What's her AWS certification?",
   "Compare her AI projects",
@@ -560,34 +565,42 @@ export default function Portfolio() {
         .chip:hover { background: ${COLORS.bgHover} !important; }
         .navlink { transition: color 0.15s; }
         .navlink:hover { color: white !important; }
+        .nav-scroll::-webkit-scrollbar { display: none; }
+        @media (max-width: 720px) {
+          .sync-status { display: none !important; }
+        }
+        @media (max-width: 860px) {
+          .side-panel { position: fixed !important; inset: 0 !important; width: 100% !important; z-index: 50; }
+          .side-panel-backdrop { display: block !important; }
+        }
       `}</style>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: `1px solid ${COLORS.border}`, flexWrap: "wrap", rowGap: 10, flexShrink: 0 }}>
-          <button onClick={() => setMessages([])} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: `1px solid ${COLORS.border}`, flexShrink: 0, gap: 16 }}>
+          <button onClick={() => setMessages([])} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
             <Sparkles size={16} color={COLORS.amber} />
             <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: "white" }}>Ananya Arora</span>
           </button>
           {empty && (
-            <nav style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
-              {[["Skills", "#skills"], ["Projects", "#projects"], ["Behind the Build", "#behind-the-build"], ["Experience", "#experience"], ["Certifications", "#certifications"], ["Leadership", "#leadership"], ["Chat", "#chat"]].map(([label, href]) => (
-                <a key={href} href={href} className="navlink" style={{ fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "none" }}>{label}</a>
+            <nav className="nav-scroll" style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "nowrap", overflowX: "auto", minWidth: 0, scrollbarWidth: "none" }}>
+              {[["Skills", "#skills"], ["Projects", "#projects"], ["Experience", "#experience"], ["Certifications", "#certifications"], ["Leadership", "#leadership"], ["Chat", "#chat"]].map(([label, href]) => (
+                <a key={href} href={href} className="navlink" style={{ fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "none", whiteSpace: "nowrap" }}>{label}</a>
               ))}
             </nav>
           )}
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
             {syncStatus === "syncing" && (
-              <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: COLORS.slateMuted }}>
+              <span className="sync-status" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: COLORS.slateMuted }}>
                 <Loader2 size={12} className="animate-spin" /> Syncing GitHub…
               </span>
             )}
             {syncStatus === "synced" && (
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: COLORS.teal }}>
+              <span className="sync-status" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: COLORS.teal }}>
                 {projects.length} projects · live from GitHub
               </span>
             )}
             {syncStatus === "fallback" && (
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: COLORS.amber }}>
+              <span className="sync-status" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: COLORS.amber }}>
                 GitHub sync unavailable · showing cached projects
               </span>
             )}
@@ -657,40 +670,14 @@ export default function Portfolio() {
                     <ProjectCard key={p.name} project={p} onOpen={setSidePanel} />
                   ))}
                 </div>
-                <button className="chip" onClick={() => send("Show me all her projects")} style={{
-                  marginTop: 12, fontSize: 12.5, color: COLORS.slateMuted, background: "none", border: "none",
-                  cursor: "pointer", padding: 0, textDecoration: "underline",
-                }}>See all {projects.length} projects →</button>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}>
+                  <button className="chip" onClick={() => send("Show me all her projects")} style={{
+                    fontSize: 12.5, color: COLORS.slateMuted, background: "none", border: "none",
+                    cursor: "pointer", padding: 0, textDecoration: "underline",
+                  }}>See all {projects.length} projects →</button>
+                  <span style={{ fontSize: 11.5, color: COLORS.slateMuted }}>· click a project, or ask the AI, for the full engineering story</span>
+                </div>
               </div>
-
-              {/* Behind the Build */}
-              {(() => {
-                const stories = projects.filter((p) => p.caseStudy);
-                if (!stories.length) return null;
-                return (
-                  <div id="behind-the-build" style={{ marginBottom: 44 }}>
-                    <SectionLabel>Behind the Build</SectionLabel>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                      {stories.map((story) => (
-                        <div key={story.name} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 20 }}>
-                          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: "white", marginBottom: 4 }}>
-                            {story.name}
-                          </div>
-                          <div style={{ fontSize: 12.5, color: COLORS.slateMuted, marginBottom: 16 }}>{story.tagline}</div>
-                          <div style={{ marginBottom: 16 }}>
-                            <ArchDiagram flow={story.archFlow} />
-                          </div>
-                          <CaseStudy caseStudy={story.caseStudy} />
-                          <button className="chip" onClick={() => setSidePanel(story.name)} style={{
-                            marginTop: 14, fontSize: 12.5, color: COLORS.amber, background: "none", border: "none",
-                            cursor: "pointer", padding: 0, textDecoration: "underline",
-                          }}>Open full project detail →</button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
 
               {/* Experience */}
               <div id="experience" style={{ marginBottom: 44 }}>
@@ -800,7 +787,10 @@ export default function Portfolio() {
       </div>
 
       {panelProject && (
-        <div style={{ width: 340, borderLeft: `1px solid ${COLORS.border}`, background: COLORS.bgCard, padding: 24, overflowY: "auto" }}>
+        <div className="side-panel-backdrop" onClick={() => setSidePanel(null)} style={{ display: "none", position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 40 }} />
+      )}
+      {panelProject && (
+        <div className="side-panel" style={{ width: 340, borderLeft: `1px solid ${COLORS.border}`, background: COLORS.bgCard, padding: 24, overflowY: "auto", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: COLORS.teal }}>{panelProject.focus}</span>
             <button onClick={() => setSidePanel(null)} style={{ background: "none", border: "none", color: COLORS.slateMuted, cursor: "pointer" }}><X size={18} /></button>
