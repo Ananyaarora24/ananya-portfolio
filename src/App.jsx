@@ -313,6 +313,7 @@ const STARTERS = [
   "Walk me through her experience",
   "What's her AWS certification?",
   "Compare her AI projects",
+  "Show me all her projects",
 ];
 
 const FEATURED_NAMES = ["VoiceGuide", "SimplyGraph", "Feedback Intelligence Dashboard"];
@@ -664,24 +665,28 @@ export default function Portfolio() {
 
               {/* Behind the Build */}
               {(() => {
-                const story = projects.find((p) => p.name === "VoiceGuide");
-                if (!story?.caseStudy) return null;
+                const stories = projects.filter((p) => p.caseStudy);
+                if (!stories.length) return null;
                 return (
                   <div id="behind-the-build" style={{ marginBottom: 44 }}>
                     <SectionLabel>Behind the Build</SectionLabel>
-                    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 20 }}>
-                      <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: "white", marginBottom: 4 }}>
-                        Building a real-time voice pipeline for {story.name}
-                      </div>
-                      <div style={{ fontSize: 12.5, color: COLORS.slateMuted, marginBottom: 16 }}>{story.tagline}</div>
-                      <div style={{ marginBottom: 16 }}>
-                        <ArchDiagram flow={story.archFlow} />
-                      </div>
-                      <CaseStudy caseStudy={story.caseStudy} />
-                      <button className="chip" onClick={() => setSidePanel(story.name)} style={{
-                        marginTop: 14, fontSize: 12.5, color: COLORS.amber, background: "none", border: "none",
-                        cursor: "pointer", padding: 0, textDecoration: "underline",
-                      }}>Open full project detail →</button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                      {stories.map((story) => (
+                        <div key={story.name} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 20 }}>
+                          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: "white", marginBottom: 4 }}>
+                            {story.name}
+                          </div>
+                          <div style={{ fontSize: 12.5, color: COLORS.slateMuted, marginBottom: 16 }}>{story.tagline}</div>
+                          <div style={{ marginBottom: 16 }}>
+                            <ArchDiagram flow={story.archFlow} />
+                          </div>
+                          <CaseStudy caseStudy={story.caseStudy} />
+                          <button className="chip" onClick={() => setSidePanel(story.name)} style={{
+                            marginTop: 14, fontSize: 12.5, color: COLORS.amber, background: "none", border: "none",
+                            cursor: "pointer", padding: 0, textDecoration: "underline",
+                          }}>Open full project detail →</button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
