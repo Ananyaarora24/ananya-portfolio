@@ -758,14 +758,15 @@ export default function Portfolio() {
           </div>
         ) : (
           <>
-            <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
-              <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
+            <div ref={scrollRef} style={{ flex: 1, minWidth: 0, overflowY: "auto", overflowX: "hidden", padding: "24px" }}>
+              <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", display: "flex", flexDirection: "column", gap: 20, boxSizing: "border-box" }}>
                 {messages.map((m, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start" }}>
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start", minWidth: 0 }}>
                     <div style={{
                       maxWidth: "85%", background: m.role === "user" ? COLORS.amber : COLORS.bgCard,
                       color: m.role === "user" ? COLORS.bg : COLORS.slate,
                       padding: "10px 14px", borderRadius: 12, fontSize: 14.5, lineHeight: 1.6, whiteSpace: "pre-wrap",
+                      overflowWrap: "break-word", wordBreak: "break-word",
                     }}>
                       {m.content}
                     </div>
