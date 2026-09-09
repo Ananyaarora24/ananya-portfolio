@@ -506,6 +506,7 @@ export default function Portfolio() {
   const [projects, setProjects] = useState(FALLBACK_PROJECTS);
   const [syncStatus, setSyncStatus] = useState("syncing");
   const scrollRef = useRef(null);
+  const heroScrollRef = useRef(null);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -566,6 +567,8 @@ export default function Portfolio() {
         .navlink { transition: color 0.15s; }
         .navlink:hover { color: white !important; }
         .nav-scroll::-webkit-scrollbar { display: none; }
+        .pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         @media (max-width: 720px) {
           .sync-status { display: none !important; }
         }
@@ -611,34 +614,49 @@ export default function Portfolio() {
         </div>
 
         {empty ? (
-          <div style={{ flex: 1, overflowY: "auto", padding: "48px 24px 80px" }}>
+          <div ref={heroScrollRef} style={{ flex: 1, overflowY: "auto", padding: "48px 24px 80px" }}>
             <div style={{ width: "100%", maxWidth: 880, margin: "0 auto" }}>
-              {/* Hero */}
-              <div style={{ textAlign: "center", marginBottom: 48 }}>
-                <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 34, color: "white", marginBottom: 8 }}>
+              {/* Agent hero */}
+              <div style={{ textAlign: "center", marginBottom: 56, paddingTop: 8 }}>
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: 7, fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 11, color: COLORS.teal, background: "rgba(94,234,212,0.08)", border: `1px solid ${COLORS.border}`,
+                  borderRadius: 20, padding: "5px 12px", marginBottom: 18,
+                }}>
+                  <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: COLORS.teal, display: "inline-block" }} />
+                  AI agent online · ask me anything
+                </div>
+                <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 32, color: "white", marginBottom: 8 }}>
                   Ananya Arora
                 </h1>
-                <p style={{ color: COLORS.teal, fontSize: 15.5, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 10 }}>
+                <p style={{ color: COLORS.teal, fontSize: 15, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 28 }}>
                   Software Engineer building AI-powered and cloud-native products
                 </p>
-                <p style={{ color: COLORS.slate, fontSize: 14.5, lineHeight: 1.6, maxWidth: 560, margin: "0 auto" }}>
-                  CS graduate from Arizona State University (summa cum laude, 3.93 GPA) with experience across
-                  full-stack development, AI/ML, AWS, and production infrastructure — now based in San Francisco
-                  and open to full-time software engineering and AI roles.
-                </p>
-                <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
-                  <a href="mailto:ananya.arora.tech@gmail.com" style={{
-                    display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500, color: COLORS.bg,
-                    background: COLORS.amber, borderRadius: 8, padding: "9px 16px", textDecoration: "none",
-                  }}><Mail size={14} /> Email</a>
-                  <a href="https://www.linkedin.com/in/ananyaaro/" target="_blank" rel="noreferrer" style={{
-                    display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.slate,
-                    background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: "9px 16px", textDecoration: "none",
-                  }}><Linkedin size={14} color={COLORS.teal} /> LinkedIn</a>
-                  <a href="https://github.com/Ananyaarora24" target="_blank" rel="noreferrer" style={{
-                    display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.slate,
-                    background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: "9px 16px", textDecoration: "none",
-                  }}><Github size={14} color={COLORS.teal} /> GitHub</a>
+
+                <div id="chat" style={{ maxWidth: 620, margin: "0 auto" }}>
+                  <ChatInput
+                    input={input} setInput={setInput} onSend={() => send()} loading={loading}
+                    large autoFocus
+                    placeholder="Ask about her projects, skills, or experience…"
+                  />
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14, justifyContent: "center" }}>
+                    {STARTERS.map((s) => (
+                      <button key={s} className="chip" onClick={() => send(s)} style={{
+                        fontSize: 12.5, color: COLORS.slate, background: COLORS.bgCard, border: `1px solid ${COLORS.border}`,
+                        borderRadius: 20, padding: "7px 13px", cursor: "pointer",
+                      }}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 28, flexWrap: "wrap", alignItems: "center" }}>
+                  <a href="#skills" className="navlink" style={{ fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "underline" }}>
+                    Or browse her work below ↓
+                  </a>
+                  <span style={{ color: COLORS.border }}>·</span>
+                  <a href="mailto:ananya.arora.tech@gmail.com" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "none" }}><Mail size={12} /> Email</a>
+                  <a href="https://www.linkedin.com/in/ananyaaro/" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "none" }}><Linkedin size={12} /> LinkedIn</a>
+                  <a href="https://github.com/Ananyaarora24" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "none" }}><Github size={12} /> GitHub</a>
                 </div>
               </div>
 
@@ -729,18 +747,12 @@ export default function Portfolio() {
                 </div>
               </div>
 
-              {/* Chat entry point */}
-              <div id="chat" style={{ borderTop: `1px solid ${COLORS.border}`, paddingTop: 32 }}>
-                <SectionLabel>Have a specific question? Ask the AI for the full story</SectionLabel>
-                <ChatInput input={input} setInput={setInput} onSend={() => send()} loading={loading} />
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
-                  {STARTERS.map((s) => (
-                    <button key={s} className="chip" onClick={() => send(s)} style={{
-                      fontSize: 13, color: COLORS.slate, background: COLORS.bgCard, border: `1px solid ${COLORS.border}`,
-                      borderRadius: 20, padding: "8px 14px", cursor: "pointer",
-                    }}>{s}</button>
-                  ))}
-                </div>
+              {/* Back to the agent */}
+              <div style={{ borderTop: `1px solid ${COLORS.border}`, paddingTop: 32, textAlign: "center" }}>
+                <SectionLabel>Have a specific question?</SectionLabel>
+                <button className="chip" onClick={() => heroScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })} style={{
+                  fontSize: 13, color: COLORS.amber, background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline",
+                }}>↑ Ask the AI agent at the top</button>
               </div>
             </div>
           </div>
@@ -827,22 +839,28 @@ export default function Portfolio() {
   );
 }
 
-function ChatInput({ input, setInput, onSend, loading }) {
+function ChatInput({ input, setInput, onSend, loading, large, autoFocus, placeholder }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 14, padding: "6px 6px 6px 16px" }}>
-      <Plus size={16} color={COLORS.slateMuted} />
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8, background: COLORS.bgCard,
+      border: `1px solid ${large ? COLORS.teal : COLORS.border}`, borderRadius: large ? 18 : 14,
+      padding: large ? "8px 8px 8px 20px" : "6px 6px 6px 16px",
+      boxShadow: large ? "0 8px 30px rgba(0,0,0,0.35)" : "none",
+    }}>
+      <Plus size={large ? 18 : 16} color={COLORS.slateMuted} />
       <input
         value={input}
+        autoFocus={autoFocus}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && onSend()}
-        placeholder="Ask about her projects, skills, or experience..."
-        style={{ flex: 1, background: "none", border: "none", outline: "none", color: "white", fontSize: 14, padding: "10px 0" }}
+        placeholder={placeholder || "Ask about her projects, skills, or experience..."}
+        style={{ flex: 1, background: "none", border: "none", outline: "none", color: "white", fontSize: large ? 16 : 14, padding: large ? "14px 0" : "10px 0" }}
       />
       <button onClick={onSend} disabled={loading} style={{
-        width: 34, height: 34, borderRadius: 10, background: COLORS.amber, border: "none",
+        width: large ? 42 : 34, height: large ? 42 : 34, borderRadius: large ? 13 : 10, background: COLORS.amber, border: "none",
         display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
       }}>
-        <Send size={15} color={COLORS.bg} />
+        <Send size={large ? 18 : 15} color={COLORS.bg} />
       </button>
     </div>
   );
