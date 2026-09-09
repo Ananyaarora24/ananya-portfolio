@@ -26,15 +26,29 @@ const CURATED = {
     stack: ["React", "Vite", "Tailwind CSS", "OpenAI Vision", "Whisper", "TTS", "MediaStream API"],
     focus: "Accessibility",
     highlight: "Low-latency voice pipeline",
+    archFlow: ["Camera feed", "MediaStream API", "OpenAI Vision", "Whisper (voice query)", "TTS", "Spoken feedback"],
+    caseStudy: {
+      problem: "Visually impaired users need continuous, spoken awareness of their surroundings — not a static image caption, but a live loop that keeps up as the scene and their questions change.",
+      build: "A React/Vite frontend streams the camera feed over the MediaStream API into OpenAI Vision for scene interpretation, while Whisper handles spoken queries in parallel; responses are read back through TTS.",
+      challenge: "Chaining three model calls (vision, speech-to-text, text-to-speech) around a live video stream meant every added millisecond of latency was directly felt by the user, so the pipeline had to be built for low-latency, low-friction turnaround end to end.",
+      result: "A working real-time audio-guidance loop — camera in, spoken feedback out — built and demoed with teammates.",
+    },
   },
   SimplyDesmos: {
     name: "SimplyGraph",
-    tagline: "AI-powered SAT math tutor with Desmos",
+    tagline: "Co-founded an AI-powered SAT Math prep platform",
     date: "Sep 2025",
-    desc: "An AI-powered SAT math tutor integrating the Desmos graphing calculator for interactive problem solving and AI-generated hints. Backed by a serverless AWS architecture using Lambda, Cognito, Secrets Manager, and Aurora RDS to handle authentication and scalable data storage.",
+    desc: "Co-founded SimplyGraph, an AI-powered SAT Math prep platform with 500+ practice problems and the same Desmos graphing calculator students use on test day. An in-app AI assistant offers Hint, Solution, Teach Me, and Analyze modes alongside each problem. Backed by a serverless AWS architecture using Lambda, Cognito, Secrets Manager, and Aurora RDS to handle authentication and scalable data storage.",
     stack: ["Python", "AWS Lambda", "Cognito", "Secrets Manager", "Aurora", "Desmos"],
     focus: "EdTech",
-    highlight: "Serverless AWS backend",
+    highlight: "Co-Founder · 500+ practice problems",
+    archFlow: ["Student", "Desmos UI", "AI assistant (Hint/Solution/Teach Me/Analyze)", "AWS Lambda", "Cognito (auth)", "Aurora RDS"],
+    caseStudy: {
+      problem: "SAT math prep tools are usually either a static calculator or a static hint bank — students get one or the other, not both working together in real time.",
+      build: "As a co-founder, wired the Desmos graphing calculator into an AI assistant that offers four distinct modes per problem — Hint, Solution, Teach Me, and Analyze — across a bank of 500+ SAT Math practice problems, backed by a serverless AWS stack.",
+      challenge: "Authentication and data storage had to scale without a managed server, so the backend runs entirely on Lambda, with Cognito for auth, Secrets Manager for credentials, and Aurora RDS for persistence.",
+      result: "A live, co-founded product — not just a class project — where the graphing UI, AI assistant, and user data all stay in sync without any long-running backend to manage.",
+    },
   },
   "feedback-intelligence-dashboard": {
     name: "Feedback Intelligence Dashboard",
@@ -43,15 +57,29 @@ const CURATED = {
     stack: ["React", "Cloudflare Workers", "D1", "Workers AI"],
     focus: "Product analytics",
     highlight: "Deployed on Cloudflare's edge",
+    archFlow: ["User feedback", "Cloudflare Workers", "Workers AI (Llama 3.1)", "D1", "Dashboard"],
+    caseStudy: {
+      problem: "Raw user feedback piles up faster than a PM can read it by hand — the signal (sentiment, themes) needs to surface on its own.",
+      build: "A React dashboard backed entirely by Cloudflare's edge: Workers handle requests, Workers AI (Llama 3.1) scores sentiment, and D1 stores the results — no separate server or database to provision.",
+      challenge: "Running inference and storage on the same edge platform the feedback was already flowing through, instead of shipping data out to a separate ML service.",
+      result: "A self-contained sentiment-analysis dashboard, built and shipped during a Cloudflare PM internship, running end to end on Cloudflare's own edge stack.",
+    },
   },
   LAHacksChatbot: {
     name: "Askademia",
-    tagline: "AI study assistant, MLH award winner",
+    tagline: "Conversational TA assistant, MLH award winner",
     date: "Apr 2025",
-    desc: "An AI study assistant built with Gemini AI and MongoDB, deployed as a full-stack app and presented at LAHacks. Won the MLH Best Domain Name Award from the GoDaddy Registry for its project concept and execution.",
-    stack: ["Gemini AI", "MongoDB"],
+    desc: "A conversational TA assistant that answers questions over course materials using a Retrieval-Augmented Generation pipeline: a React chat UI talks to a FastAPI backend that runs vector search over ingested course content and queries Google Gemini, all deployed on AWS via Docker with CI/CD. Presented at LAHacks, where it won the MLH Best Domain Name Award from the GoDaddy Registry.",
+    stack: ["React", "FastAPI", "Vector Search", "Google Gemini", "AWS", "Docker"],
     focus: "EdTech",
     highlight: "MLH Best Domain Name Award",
+    archFlow: ["React chat UI", "FastAPI + vector search (RAG)", "Google Gemini", "AWS + Docker (CI/CD)", "Response back to chat UI"],
+    caseStudy: {
+      problem: "Students asking questions about course materials need answers grounded in the actual course content, not a generic chatbot response.",
+      build: "A React chat UI sends questions to a FastAPI backend, which runs vector search over ingested course materials to retrieve relevant context, then queries Google Gemini to generate a grounded answer — a full RAG pipeline deployed on AWS via Docker with CI/CD.",
+      challenge: "Coordinating five moving pieces — frontend, RAG backend, third-party model, ingestion, and deployment — into one working loop under hackathon time pressure.",
+      result: "A working conversational TA assistant, presented at LAHacks and awarded MLH's Best Domain Name Award from the GoDaddy Registry.",
+    },
   },
   "Hand-Gesture-Recognition-with-Text-to-Speech": {
     name: "Hand Gesture Recognition",
@@ -358,6 +386,43 @@ function ComparisonWidget({ names, onOpen, projects }) {
   );
 }
 
+function ArchDiagram({ flow }) {
+  if (!flow?.length) return null;
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+      {flow.map((step, i) => (
+        <div key={step} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: COLORS.slate,
+            background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 6, padding: "5px 9px",
+          }}>{step}</span>
+          {i < flow.length - 1 && <span style={{ color: COLORS.amber, fontSize: 12 }}>→</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CaseStudy({ caseStudy }) {
+  if (!caseStudy) return null;
+  const rows = [
+    ["Problem", caseStudy.problem],
+    ["What I built", caseStudy.build],
+    ["Engineering challenge", caseStudy.challenge],
+    ["Result", caseStudy.result],
+  ];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {rows.map(([label, text]) => (
+        <div key={label}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: 0.4, textTransform: "uppercase", color: COLORS.slateMuted, marginBottom: 3 }}>{label}</div>
+          <div style={{ fontSize: 12.5, color: COLORS.slate, lineHeight: 1.55 }}>{text}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function LinksWidget() {
   const links = [
     { label: "GitHub", href: "https://github.com/Ananyaarora24", Icon: Github },
@@ -504,7 +569,7 @@ export default function Portfolio() {
           </button>
           {empty && (
             <nav style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
-              {[["Skills", "#skills"], ["Projects", "#projects"], ["Experience", "#experience"], ["Certifications", "#certifications"], ["Leadership", "#leadership"], ["Chat", "#chat"]].map(([label, href]) => (
+              {[["Skills", "#skills"], ["Projects", "#projects"], ["Behind the Build", "#behind-the-build"], ["Experience", "#experience"], ["Certifications", "#certifications"], ["Leadership", "#leadership"], ["Chat", "#chat"]].map(([label, href]) => (
                 <a key={href} href={href} className="navlink" style={{ fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "none" }}>{label}</a>
               ))}
             </nav>
@@ -539,12 +604,13 @@ export default function Portfolio() {
                 <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 34, color: "white", marginBottom: 8 }}>
                   Ananya Arora
                 </h1>
-                <p style={{ color: COLORS.teal, fontSize: 14.5, fontFamily: "'JetBrains Mono', monospace", marginBottom: 14 }}>
-                  CS graduate · AI, cloud, and backend systems · San Francisco
+                <p style={{ color: COLORS.teal, fontSize: 15.5, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 10 }}>
+                  Software Engineer building AI-powered and cloud-native products
                 </p>
                 <p style={{ color: COLORS.slate, fontSize: 14.5, lineHeight: 1.6, maxWidth: 560, margin: "0 auto" }}>
-                  Summa cum laude B.S. in Computer Science from Arizona State University (3.93 GPA), now building AI
-                  and cloud products in San Francisco. Open to full-time software engineering and AI roles.
+                  CS graduate from Arizona State University (summa cum laude, 3.93 GPA) with experience across
+                  full-stack development, AI/ML, AWS, and production infrastructure — now based in San Francisco
+                  and open to full-time software engineering and AI roles.
                 </p>
                 <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
                   <a href="mailto:ananya.arora.tech@gmail.com" style={{
@@ -595,6 +661,31 @@ export default function Portfolio() {
                   cursor: "pointer", padding: 0, textDecoration: "underline",
                 }}>See all {projects.length} projects →</button>
               </div>
+
+              {/* Behind the Build */}
+              {(() => {
+                const story = projects.find((p) => p.name === "VoiceGuide");
+                if (!story?.caseStudy) return null;
+                return (
+                  <div id="behind-the-build" style={{ marginBottom: 44 }}>
+                    <SectionLabel>Behind the Build</SectionLabel>
+                    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 20 }}>
+                      <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: "white", marginBottom: 4 }}>
+                        Building a real-time voice pipeline for {story.name}
+                      </div>
+                      <div style={{ fontSize: 12.5, color: COLORS.slateMuted, marginBottom: 16 }}>{story.tagline}</div>
+                      <div style={{ marginBottom: 16 }}>
+                        <ArchDiagram flow={story.archFlow} />
+                      </div>
+                      <CaseStudy caseStudy={story.caseStudy} />
+                      <button className="chip" onClick={() => setSidePanel(story.name)} style={{
+                        marginTop: 14, fontSize: 12.5, color: COLORS.amber, background: "none", border: "none",
+                        cursor: "pointer", padding: 0, textDecoration: "underline",
+                      }}>Open full project detail →</button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Experience */}
               <div id="experience" style={{ marginBottom: 44 }}>
@@ -719,6 +810,17 @@ export default function Portfolio() {
               ))}
             </div>
           </div>
+          {panelProject.archFlow && (
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 11.5, color: COLORS.slateMuted, marginBottom: 8 }}>Architecture</div>
+              <ArchDiagram flow={panelProject.archFlow} />
+            </div>
+          )}
+          {panelProject.caseStudy && (
+            <div style={{ marginTop: 20, borderTop: `1px solid ${COLORS.border}`, paddingTop: 16 }}>
+              <CaseStudy caseStudy={panelProject.caseStudy} />
+            </div>
+          )}
           <a href={panelProject.link} target="_blank" rel="noreferrer" style={{
             display: "inline-flex", alignItems: "center", gap: 6, marginTop: 20, fontSize: 13, color: COLORS.amber, textDecoration: "none",
           }}>
