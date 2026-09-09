@@ -303,11 +303,11 @@ Respond with ONLY valid JSON (no markdown fences, no preamble), matching exactly
 
 WIDGET is one of:
 - null (for general questions with no specific project/timeline/contact focus)
-- {"type": "projects", "names": ["Exact Project Name", ...]} — 1 to 4 names, when discussing specific project(s)
+- {"type": "projects", "names": ["Exact Project Name", ...]} — MANDATORY, not optional, any time your reply names and discusses one or more specific projects. This includes "tell me about X", "engineering story behind X", "walk me through X", "explain X in detail" — any answer whose subject is a named project. 1 to 4 names. This is what lets the visitor click through to the live GitHub repo, so never leave it null when a project is the actual subject of the answer.
 - {"type": "timeline"} — when asked about her career, experience, or work history
 - {"type": "comparison", "names": ["Exact Project Name", "Exact Project Name"]} — exactly 2-3 names, only when asked to compare projects
 - {"type": "links"} — when asked for GitHub, LinkedIn, portfolio, or contact info
-- {"type": "posts"} — when asked about her recent LinkedIn posts or activity
+- {"type": "posts"} — MANDATORY any time your reply cites one or more specific LinkedIn posts by title, even as a supporting example inside an answer about something else — not only when the user explicitly asks for her recent activity. If you mention a post's title in the reply, set this widget so the visitor can open the real post.
 
 If a question can't be answered from the facts above, set widget to null and say you don't have that detail, suggesting they email ananya.arora.tech@gmail.com.
 `.trim();
