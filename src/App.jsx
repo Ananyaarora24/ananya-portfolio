@@ -553,7 +553,7 @@ export default function Portfolio() {
   const panelProject = sidePanel ? projects.find((p) => p.name === sidePanel) : null;
 
   return (
-    <div style={{ background: COLORS.bg, minHeight: "100vh", display: "flex", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ background: COLORS.bg, height: "100vh", display: "flex", fontFamily: "'Inter', sans-serif", overflow: "hidden" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
         ::placeholder { color: ${COLORS.slateMuted}; }
@@ -563,7 +563,7 @@ export default function Portfolio() {
       `}</style>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: `1px solid ${COLORS.border}`, flexWrap: "wrap", rowGap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: `1px solid ${COLORS.border}`, flexWrap: "wrap", rowGap: 10, flexShrink: 0 }}>
           <button onClick={() => setMessages([])} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer" }}>
             <Sparkles size={16} color={COLORS.amber} />
             <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: "white" }}>Ananya Arora</span>
