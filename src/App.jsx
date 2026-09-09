@@ -258,7 +258,7 @@ function buildSystemPrompt(projects) {
       const base = `- ${p.name}${p.date ? ` (${p.date})` : ""}: ${p.desc} Stack: ${p.stack.join(", ") || "n/a"}.`;
       if (!p.caseStudy) return base;
       const cs = p.caseStudy;
-      return `${base}\n  Engineering story — Problem: ${cs.problem} What she built: ${cs.build} Challenge: ${cs.challenge} Result: ${cs.result}${p.archFlow ? ` Architecture: ${p.archFlow.join(" → ")}.` : ""}`;
+      return `${base}\n  Engineering challenge: ${cs.challenge} Result: ${cs.result}${p.archFlow ? ` Architecture: ${p.archFlow.join(" → ")}.` : ""}`;
     })
     .join("\n");
 
