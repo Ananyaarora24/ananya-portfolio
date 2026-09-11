@@ -50,21 +50,6 @@ const CURATED = {
       result: "A live, co-founded product — not just a class project — where the graphing UI, AI assistant, and user data all stay in sync without any long-running backend to manage.",
     },
   },
-  "feedback-intelligence-dashboard": {
-    name: "Feedback Intelligence Dashboard",
-    tagline: "Sentiment analysis built during a Cloudflare PM internship",
-    desc: "Built during a Product Manager internship at Cloudflare. Runs sentiment analysis on user feedback using Workers AI (Llama 3.1), deployed entirely on Cloudflare's edge with Workers and D1.",
-    stack: ["React", "Cloudflare Workers", "D1", "Workers AI"],
-    focus: "Product analytics",
-    highlight: "Deployed on Cloudflare's edge",
-    archFlow: ["User feedback", "Cloudflare Workers", "Workers AI (Llama 3.1)", "D1", "Dashboard"],
-    caseStudy: {
-      problem: "Raw user feedback piles up faster than a PM can read it by hand — the signal (sentiment, themes) needs to surface on its own.",
-      build: "A React dashboard backed entirely by Cloudflare's edge: Workers handle requests, Workers AI (Llama 3.1) scores sentiment, and D1 stores the results — no separate server or database to provision.",
-      challenge: "Running inference and storage on the same edge platform the feedback was already flowing through, instead of shipping data out to a separate ML service.",
-      result: "A self-contained sentiment-analysis dashboard, built and shipped during a Cloudflare PM internship, running end to end on Cloudflare's own edge stack.",
-    },
-  },
   LAHacksChatbot: {
     name: "Askademia",
     tagline: "Conversational TA assistant, MLH award winner",
@@ -89,6 +74,13 @@ const CURATED = {
     stack: ["OpenCV", "Keras", "Pyttsx3"],
     focus: "Computer vision",
     highlight: "85% classification accuracy",
+    archFlow: ["Webcam feed", "OpenCV (hand region detection)", "Keras CNN (A-Z classification)", "Pyttsx3 (text-to-speech)", "Spoken + on-screen output"],
+    caseStudy: {
+      problem: "Hand-sign recognition needs to run in real time off a live camera feed, and communicate results without forcing the user to read a screen.",
+      build: "OpenCV captures and preprocesses each webcam frame to isolate the hand region, which a Keras-trained CNN classifies against the 26 letters of the alphabet; every prediction is passed to Pyttsx3 for immediate spoken output alongside the on-screen label.",
+      challenge: "Keeping classification fast and accurate enough to run per-frame in real time, since a laggy or noisy prediction breaks the feedback loop the whole feature depends on.",
+      result: "A real-time A-Z hand gesture classifier reaching 85% accuracy end to end, pairing visual and spoken feedback for every detected gesture.",
+    },
   },
   "Academic-help-system-software": {
     name: "Academic Help System",
@@ -98,6 +90,73 @@ const CURATED = {
     stack: ["Java", "MySQL"],
     focus: "Backend systems",
     highlight: "javax.crypto encryption",
+    archFlow: ["Java client", "JDBC (Connection / PreparedStatement / ResultSet)", "MySQL database", "javax.crypto (encrypted fields)", "org.json (serialization)"],
+    caseStudy: {
+      problem: "A student help-article system needs to persist user accounts and content safely, without leaking sensitive fields in plaintext if the database itself is ever exposed.",
+      build: "A Java backend uses JDBC's Connection, PreparedStatement, and ResultSet to manage user accounts and help articles in MySQL, encrypting sensitive fields with javax.crypto before they're written and serializing structured data through org.json alongside direct file I/O.",
+      challenge: "Keeping every query parameterized through PreparedStatement while layering encryption and decryption cleanly around just the fields that needed it.",
+      result: "A working encrypted MySQL backend for student account and help-article data, built entirely on core Java's JDBC and crypto libraries with no external framework.",
+    },
+  },
+  "ananya-portfolio": {
+    name: "ananya-portfolio",
+    tagline: "This AI-powered portfolio site, live from GitHub",
+    desc: "This portfolio site itself: a React/Vite/Tailwind single-page app with an embedded AI chat assistant that answers visitor questions grounded only in her real project, experience, and education data, plus a project feed synced live from the GitHub API. Deployed as static assets with Cloudflare Pages Functions handling the chat and GitHub proxy endpoints.",
+    stack: ["React", "Vite", "Tailwind CSS", "Cloudflare Pages Functions", "Groq API"],
+    focus: "Portfolio",
+    highlight: "The site you're looking at right now",
+    archFlow: ["Visitor", "React/Vite/Tailwind UI", "Cloudflare Pages Functions (/api/chat, /api/github-projects)", "Groq API (GPT-OSS-120B)", "Grounded reply + widget"],
+    caseStudy: {
+      problem: "A static portfolio page can list projects, but it can't answer a recruiter's specific follow-up question — like 'walk me through the architecture of X' — without either a wall of text or a chatbot that hallucinates details.",
+      build: "A React/Vite/Tailwind frontend renders project cards synced live from the GitHub API through a Cloudflare Pages Function, while a chat panel sends visitor questions plus a system prompt built entirely from her real project/experience/education data to Groq's hosted GPT-OSS-120B, which returns a grounded answer and a UI widget (project cards, timeline, links) to render alongside it.",
+      challenge: "Keeping the assistant from inventing projects, dates, or numbers meant constraining every reply to only the facts assembled into the system prompt, while keeping that prompt within request-size and rate limits without cutting real answers short.",
+      result: "A self-hosting portfolio — this project card, and the panel you're reading now, are both fetched live from her GitHub the same way every other repo on this page is.",
+    },
+  },
+  "HealthCare-HackPrinceton-": {
+    name: "Bloom",
+    tagline: "Women's health tracker built at HackPrinceton",
+    desc: "Bloom, a women's health tracking app built at HackPrinceton. A Swift iOS app ('mood') gives users a day-to-day interface for logging cycle, symptom, and lifestyle data, backed by a Java service layer that manages a MySQL schema of Users, HealthMetrics, Lifestyle, MedicalHistory, Symptoms, and OvulationFertility tables through JDBC.",
+    stack: ["Swift", "Java", "MySQL", "JDBC"],
+    focus: "HealthTech",
+    highlight: "Built at HackPrinceton",
+    archFlow: ["Bloom iOS app (SwiftUI)", "Java service layer (JDBC)", "MySQL (Users, HealthMetrics, Symptoms, OvulationFertility, Lifestyle, MedicalHistory)"],
+    caseStudy: {
+      problem: "Women's health tracking spans several distinct kinds of data — cycle/fertility, symptoms, lifestyle, medical history — that most single-purpose tracking apps don't unify in one place.",
+      build: "A SwiftUI iOS app ('mood') provides the day-to-day logging interface, while a Java backend connects over JDBC to a MySQL schema of six tables — Users, HealthMetrics, Lifestyle, MedicalHistory, Symptoms, and OvulationFertility — to persist and query that data.",
+      challenge: "Designing a relational schema that could hold several different categories of health data per user without collapsing them into one unstructured blob, while keeping the JDBC layer's queries parameterized.",
+      result: "A working iOS health-tracking prototype backed by a real relational schema, built and presented at HackPrinceton.",
+    },
+  },
+  "TestGame-Multiplayer": {
+    name: "Multiplayer Game",
+    tagline: "Real-time 2-player game over raw TCP sockets",
+    desc: "A 2-player multiplayer game built with Pygame, where a threaded Python socket server tracks each player's position and relays it to the other client in real time, with a small Network wrapper class handling the client-side socket connection and position sync.",
+    stack: ["Python", "Pygame", "Sockets", "Threading"],
+    focus: "Networking / Games",
+    highlight: "Threaded TCP server syncing 2 clients",
+    archFlow: ["Client A (Pygame + keyboard input)", "network.py (TCP socket)", "Server.py (threaded, tracks positions)", "Client B (Pygame render)"],
+    caseStudy: {
+      problem: "A local single-player game loop doesn't show you the other player — position updates need to travel between two independent Pygame clients in real time without relying on a game engine's built-in networking.",
+      build: "Each client runs its own Pygame loop and keyboard-driven Player object, sending its position over a raw TCP socket (network.py) to a threaded Server.py that stores both players' positions and relays each one back to the opposite client on every request.",
+      challenge: "Handling two concurrent client connections on one socket server without one player's request blocking the other — the reason the server spins up a threaded handler per connection.",
+      result: "A working two-client multiplayer loop — move on one screen, see the update on the other — built directly on Python sockets rather than a networking library.",
+    },
+  },
+  "Devils-Invent-UXO": {
+    name: "UXO Detection Rover",
+    tagline: "Autonomous rover for unexploded-ordnance detection",
+    desc: "An Arduino-driven rover built at ASU's Devils Invent hackathon to help locate unexploded ordnance (UXO): an ultrasonic sensor drives obstacle avoidance for the drive motors while a capacitive sensing circuit scans for buried metal, with a Unity companion app and a Figma-designed UI for visualizing the rover's readings.",
+    stack: ["Arduino (C++)", "Ultrasonic sensing", "Unity", "Figma"],
+    focus: "Robotics / Hardware",
+    highlight: "Built at ASU's Devils Invent hackathon",
+    archFlow: ["Ultrasonic sensor (HC-SR04)", "Arduino (obstacle avoidance + capacitive metal sensing)", "Drive motors + servo", "Unity companion app (Figma-designed UI)"],
+    caseStudy: {
+      problem: "Locating unexploded ordnance safely means driving a sensor over an area without a person walking into the hazard themselves, and without the rover blindly colliding with obstacles along the way.",
+      build: "An Arduino controls four drive-motor pins and a steering servo, reading an HC-SR04 ultrasonic sensor for real-time obstacle distance while a separate capacitive pulse/sense circuit scans for buried metal; a Unity app with a Figma-designed interface lets an operator visualize the rover's sensor readings.",
+      challenge: "Combining two very different sensing jobs — ultrasonic distance for navigation and capacitive sensing for metal detection — on one Arduino loop without one blocking the timing of the other.",
+      result: "A working hardware prototype demoed at Devils Invent: an Arduino rover that steers around obstacles while scanning for buried metal, paired with a Unity-based visualization app.",
+    },
   },
 };
 
@@ -321,7 +380,7 @@ const STARTERS = [
   "Show me all her projects",
 ];
 
-const FEATURED_NAMES = ["VoiceGuide", "SimplyGraph", "Feedback Intelligence Dashboard"];
+const FEATURED_NAMES = ["VoiceGuide", "SimplyGraph", "Hand Gesture Recognition"];
 
 function SectionLabel({ children }) {
   return (
