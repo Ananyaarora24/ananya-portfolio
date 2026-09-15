@@ -6,13 +6,17 @@ const MODEL = "openai/gpt-oss-120b";
 const MAX_COMPLETION_TOKENS = 1300;
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 2000;
-const MAX_SYSTEM_LENGTH = 18000;
+// The real generated system prompt (full project/experience/education data)
+// is ~18.9k chars as of the current curated project set and grows slowly as
+// more public repos get added to the live GitHub sync. 18000 silently broke
+// every chat request (400 "Invalid system prompt"); raised with headroom.
+const MAX_SYSTEM_LENGTH = 22000;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   if (!env.GROQ_API_KEY) {
-    return json({ error: "Chat is not configured on this deployment." }, 503);
+    return json({ error: "The chat assistant isn't available right now — please use the Resume / Email links above instead." }, 503);
   }
 
   let body;
@@ -63,7 +67,7 @@ export async function onRequestPost(context) {
     if (groqRes.status === 429 || detail.includes("rate_limit_exceeded")) {
       return json({ error: "Getting a lot of questions right now — please wait a few seconds and try again.", detail }, 429);
     }
-    return json({ error: "Upstream chat request failed", detail }, 502);
+    return json({ error: "Couldn't reach the AI assistant right now — please try again, or use the Resume / Email links above.", detail }, 502);
   }
 
   const data = await groqRes.json();

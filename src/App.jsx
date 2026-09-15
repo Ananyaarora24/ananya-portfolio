@@ -1,575 +1,61 @@
 import { useState, useRef, useEffect } from "react";
-import { Github, Linkedin, Mail, Send, X, ExternalLink, Loader2, Plus, Sparkles } from "lucide-react";
+import { motion, AnimatePresence, MotionConfig } from "motion/react";
+import { X, ExternalLink, Loader2, Mail, Linkedin, Github, AlertCircle, Download } from "lucide-react";
+import { colors, font, type, radius, space } from "./styles/tokens.js";
+import { PROFILE } from "./data/profile.js";
+import { SKILL_GROUPS } from "./data/skills.js";
+import { EDUCATION, CERTIFICATIONS } from "./data/education.js";
+import { LEADERSHIP } from "./data/experience.js";
+import { FALLBACK_PROJECTS, FEATURED_NAMES, fetchGithubProjects } from "./data/projects.js";
+import { buildSystemPrompt, normalizeChatText, STARTERS } from "./lib/chat.js";
+import { AppHeader } from "./components/AppHeader.jsx";
+import { IdentityBar } from "./components/IdentityBar.jsx";
+import { SectionLabel } from "./components/Section.jsx";
+import { ChatInput } from "./components/ChatInput.jsx";
+import { ProjectGrid, ProjectsWidget, ComparisonWidget } from "./components/ProjectCard.jsx";
+import { FeaturedProjectCard } from "./components/FeaturedProjectCard.jsx";
+import { CaseStudy } from "./components/CaseStudy.jsx";
+import { TimelineWidget } from "./components/TimelineWidget.jsx";
+import { LinksWidget } from "./components/LinksWidget.jsx";
+import { PostsWidget } from "./components/PostsWidget.jsx";
+import { Reveal } from "./motion/Reveal.jsx";
+import { heroContainer, heroItem, staggerContainer, sectionViewport, hoverLift, tapOnly, panelSlide, backdropFade, viewTransition, messageIn } from "./motion/presets.js";
 
-const COLORS = {
-  bg: "#0B1120",
-  bgCard: "#111A2E",
-  bgHover: "#16223A",
-  border: "#1E293B",
-  amber: "#E8A33D",
-  teal: "#5EEAD4",
-  slate: "#CBD5E1",
-  slateMuted: "#7C8AA5",
-};
-
-const GITHUB_USER = "Ananyaarora24";
-
-// Curated write-ups pulled from her resume, keyed by exact GitHub repo slug so
-// live API data can be merged with hand-written descriptions instead of
-// replacing them.
-const CURATED = {
-  VoiceGuide: {
-    name: "VoiceGuide",
-    tagline: "Real-time AI navigation for visually impaired users",
-    date: "Mar 2026",
-    desc: "A real-time AI web app giving visually impaired users audio-based navigation and interaction. Frontend built in React, Vite, and Tailwind CSS, integrating OpenAI Vision, Whisper, and TTS through a low-latency processing pipeline over the MediaStream API for live voice queries and spoken feedback.",
-    stack: ["React", "Vite", "Tailwind CSS", "OpenAI Vision", "Whisper", "TTS", "MediaStream API"],
-    focus: "Accessibility",
-    highlight: "Low-latency voice pipeline",
-    archFlow: ["Camera feed", "MediaStream API", "OpenAI Vision", "Whisper (voice query)", "TTS", "Spoken feedback"],
-    caseStudy: {
-      problem: "Visually impaired users need continuous, spoken awareness of their surroundings — not a static image caption, but a live loop that keeps up as the scene and their questions change.",
-      build: "A React/Vite frontend streams the camera feed over the MediaStream API into OpenAI Vision for scene interpretation, while Whisper handles spoken queries in parallel; responses are read back through TTS.",
-      challenge: "Chaining three model calls (vision, speech-to-text, text-to-speech) around a live video stream meant every added millisecond of latency was directly felt by the user, so the pipeline had to be built for low-latency, low-friction turnaround end to end.",
-      result: "A working real-time audio-guidance loop — camera in, spoken feedback out — built and demoed with teammates.",
-    },
-  },
-  SimplyDesmos: {
-    name: "SimplyGraph",
-    tagline: "Co-founded an AI-powered SAT Math prep platform",
-    date: "Sep 2025",
-    desc: "Co-founded SimplyGraph, an AI-powered SAT Math prep platform with 500+ practice problems and the same Desmos graphing calculator students use on test day. An in-app AI assistant offers Hint, Solution, Teach Me, and Analyze modes alongside each problem. Backed by a serverless AWS architecture using Lambda, Cognito, Secrets Manager, and Aurora RDS to handle authentication and scalable data storage.",
-    stack: ["Python", "AWS Lambda", "Cognito", "Secrets Manager", "Aurora", "Desmos"],
-    focus: "EdTech",
-    highlight: "Co-Founder · 500+ practice problems",
-    archFlow: ["Student", "Desmos UI", "AI assistant (Hint/Solution/Teach Me/Analyze)", "AWS Lambda", "Cognito (auth)", "Aurora RDS"],
-    caseStudy: {
-      problem: "SAT math prep tools are usually either a static calculator or a static hint bank — students get one or the other, not both working together in real time.",
-      build: "As a co-founder, wired the Desmos graphing calculator into an AI assistant that offers four distinct modes per problem — Hint, Solution, Teach Me, and Analyze — across a bank of 500+ SAT Math practice problems, backed by a serverless AWS stack.",
-      challenge: "Authentication and data storage had to scale without a managed server, so the backend runs entirely on Lambda, with Cognito for auth, Secrets Manager for credentials, and Aurora RDS for persistence.",
-      result: "A live, co-founded product — not just a class project — where the graphing UI, AI assistant, and user data all stay in sync without any long-running backend to manage.",
-    },
-  },
-  LAHacksChatbot: {
-    name: "Askademia",
-    tagline: "Conversational TA assistant, MLH award winner",
-    date: "Apr 2025",
-    desc: "A conversational TA assistant that answers questions over course materials using a Retrieval-Augmented Generation pipeline: a React chat UI talks to a FastAPI backend that runs vector search over ingested course content and queries Google Gemini, all deployed on AWS via Docker with CI/CD. Presented at LAHacks, where it won the MLH Best Domain Name Award from the GoDaddy Registry.",
-    stack: ["React", "FastAPI", "Vector Search", "Google Gemini", "AWS", "Docker"],
-    focus: "EdTech",
-    highlight: "MLH Best Domain Name Award",
-    archFlow: ["React chat UI", "FastAPI + vector search (RAG)", "Google Gemini", "AWS + Docker (CI/CD)", "Response back to chat UI"],
-    caseStudy: {
-      problem: "Students asking questions about course materials need answers grounded in the actual course content, not a generic chatbot response.",
-      build: "A React chat UI sends questions to a FastAPI backend, which runs vector search over ingested course materials to retrieve relevant context, then queries Google Gemini to generate a grounded answer — a full RAG pipeline deployed on AWS via Docker with CI/CD.",
-      challenge: "Coordinating five moving pieces — frontend, RAG backend, third-party model, ingestion, and deployment — into one working loop under hackathon time pressure.",
-      result: "A working conversational TA assistant, presented at LAHacks and awarded MLH's Best Domain Name Award from the GoDaddy Registry.",
-    },
-  },
-  "Hand-Gesture-Recognition-with-Text-to-Speech": {
-    name: "Hand Gesture Recognition",
-    tagline: "Real-time A-Z gesture classifier with spoken feedback",
-    date: "Dec 2024",
-    desc: "A real-time gesture recognition system using OpenCV and Keras to classify A-Z hand gestures at 85% accuracy, with Pyttsx3 text-to-speech announcing each detected gesture for combined visual and audio feedback.",
-    stack: ["OpenCV", "Keras", "Pyttsx3"],
-    focus: "Computer vision",
-    highlight: "85% classification accuracy",
-    archFlow: ["Webcam feed", "OpenCV (hand region detection)", "Keras CNN (A-Z classification)", "Pyttsx3 (text-to-speech)", "Spoken + on-screen output"],
-    caseStudy: {
-      problem: "Hand-sign recognition needs to run in real time off a live camera feed, and communicate results without forcing the user to read a screen.",
-      build: "OpenCV captures and preprocesses each webcam frame to isolate the hand region, which a Keras-trained CNN classifies against the 26 letters of the alphabet; every prediction is passed to Pyttsx3 for immediate spoken output alongside the on-screen label.",
-      challenge: "Keeping classification fast and accurate enough to run per-frame in real time, since a laggy or noisy prediction breaks the feedback loop the whole feature depends on.",
-      result: "A real-time A-Z hand gesture classifier reaching 85% accuracy end to end, pairing visual and spoken feedback for every detected gesture.",
-    },
-  },
-  "Academic-help-system-software": {
-    name: "Academic Help System",
-    tagline: "Encrypted MySQL backend for student help articles",
-    date: "Oct 2024 - Dec 2024",
-    desc: "A MySQL-backed system managing user accounts and help articles using Connection, PreparedStatement, and ResultSet, with encryption via javax.crypto and data serialization handled through org.json and file I/O.",
-    stack: ["Java", "MySQL"],
-    focus: "Backend systems",
-    highlight: "javax.crypto encryption",
-    archFlow: ["Java client", "JDBC (Connection / PreparedStatement / ResultSet)", "MySQL database", "javax.crypto (encrypted fields)", "org.json (serialization)"],
-    caseStudy: {
-      problem: "A student help-article system needs to persist user accounts and content safely, without leaking sensitive fields in plaintext if the database itself is ever exposed.",
-      build: "A Java backend uses JDBC's Connection, PreparedStatement, and ResultSet to manage user accounts and help articles in MySQL, encrypting sensitive fields with javax.crypto before they're written and serializing structured data through org.json alongside direct file I/O.",
-      challenge: "Keeping every query parameterized through PreparedStatement while layering encryption and decryption cleanly around just the fields that needed it.",
-      result: "A working encrypted MySQL backend for student account and help-article data, built entirely on core Java's JDBC and crypto libraries with no external framework.",
-    },
-  },
-  "ananya-portfolio": {
-    name: "ananya-portfolio",
-    tagline: "This AI-powered portfolio site, live from GitHub",
-    desc: "This portfolio site itself: a React/Vite/Tailwind single-page app with an embedded AI chat assistant that answers visitor questions grounded only in her real project, experience, and education data, plus a project feed synced live from the GitHub API. Deployed as static assets with Cloudflare Pages Functions handling the chat and GitHub proxy endpoints.",
-    stack: ["React", "Vite", "Tailwind CSS", "Cloudflare Pages Functions", "Groq API"],
-    focus: "Portfolio",
-    highlight: "The site you're looking at right now",
-    archFlow: ["Visitor", "React/Vite/Tailwind UI", "Cloudflare Pages Functions (/api/chat, /api/github-projects)", "Groq API (GPT-OSS-120B)", "Grounded reply + widget"],
-    caseStudy: {
-      problem: "A static portfolio page can list projects, but it can't answer a recruiter's specific follow-up question — like 'walk me through the architecture of X' — without either a wall of text or a chatbot that hallucinates details.",
-      build: "A React/Vite/Tailwind frontend renders project cards synced live from the GitHub API through a Cloudflare Pages Function, while a chat panel sends visitor questions plus a system prompt built entirely from her real project/experience/education data to Groq's hosted GPT-OSS-120B, which returns a grounded answer and a UI widget (project cards, timeline, links) to render alongside it.",
-      challenge: "Keeping the assistant from inventing projects, dates, or numbers meant constraining every reply to only the facts assembled into the system prompt, while keeping that prompt within request-size and rate limits without cutting real answers short.",
-      result: "A self-hosting portfolio — this project card, and the panel you're reading now, are both fetched live from her GitHub the same way every other repo on this page is.",
-    },
-  },
-  "HealthCare-HackPrinceton-": {
-    name: "Bloom",
-    tagline: "Women's health tracker built at HackPrinceton",
-    desc: "Bloom, a women's health tracking app built at HackPrinceton. A Swift iOS app ('mood') gives users a day-to-day interface for logging cycle, symptom, and lifestyle data, backed by a Java service layer that manages a MySQL schema of Users, HealthMetrics, Lifestyle, MedicalHistory, Symptoms, and OvulationFertility tables through JDBC.",
-    stack: ["Swift", "Java", "MySQL", "JDBC"],
-    focus: "HealthTech",
-    highlight: "Built at HackPrinceton",
-    archFlow: ["Bloom iOS app (SwiftUI)", "Java service layer (JDBC)", "MySQL (Users, HealthMetrics, Symptoms, OvulationFertility, Lifestyle, MedicalHistory)"],
-    caseStudy: {
-      problem: "Women's health tracking spans several distinct kinds of data — cycle/fertility, symptoms, lifestyle, medical history — that most single-purpose tracking apps don't unify in one place.",
-      build: "A SwiftUI iOS app ('mood') provides the day-to-day logging interface, while a Java backend connects over JDBC to a MySQL schema of six tables — Users, HealthMetrics, Lifestyle, MedicalHistory, Symptoms, and OvulationFertility — to persist and query that data.",
-      challenge: "Designing a relational schema that could hold several different categories of health data per user without collapsing them into one unstructured blob, while keeping the JDBC layer's queries parameterized.",
-      result: "A working iOS health-tracking prototype backed by a real relational schema, built and presented at HackPrinceton.",
-    },
-  },
-  "TestGame-Multiplayer": {
-    name: "Multiplayer Game",
-    tagline: "Real-time 2-player game over raw TCP sockets",
-    desc: "A 2-player multiplayer game built with Pygame, where a threaded Python socket server tracks each player's position and relays it to the other client in real time, with a small Network wrapper class handling the client-side socket connection and position sync.",
-    stack: ["Python", "Pygame", "Sockets", "Threading"],
-    focus: "Networking / Games",
-    highlight: "Threaded TCP server syncing 2 clients",
-    archFlow: ["Client A (Pygame + keyboard input)", "network.py (TCP socket)", "Server.py (threaded, tracks positions)", "Client B (Pygame render)"],
-    caseStudy: {
-      problem: "A local single-player game loop doesn't show you the other player — position updates need to travel between two independent Pygame clients in real time without relying on a game engine's built-in networking.",
-      build: "Each client runs its own Pygame loop and keyboard-driven Player object, sending its position over a raw TCP socket (network.py) to a threaded Server.py that stores both players' positions and relays each one back to the opposite client on every request.",
-      challenge: "Handling two concurrent client connections on one socket server without one player's request blocking the other — the reason the server spins up a threaded handler per connection.",
-      result: "A working two-client multiplayer loop — move on one screen, see the update on the other — built directly on Python sockets rather than a networking library.",
-    },
-  },
-  "Devils-Invent-UXO": {
-    name: "UXO Detection Rover",
-    tagline: "Autonomous rover for unexploded-ordnance detection",
-    desc: "An Arduino-driven rover built at ASU's Devils Invent hackathon to help locate unexploded ordnance (UXO): an ultrasonic sensor drives obstacle avoidance for the drive motors while a capacitive sensing circuit scans for buried metal, with a Unity companion app and a Figma-designed UI for visualizing the rover's readings.",
-    stack: ["Arduino (C++)", "Ultrasonic sensing", "Unity", "Figma"],
-    focus: "Robotics / Hardware",
-    highlight: "Built at ASU's Devils Invent hackathon",
-    archFlow: ["Ultrasonic sensor (HC-SR04)", "Arduino (obstacle avoidance + capacitive metal sensing)", "Drive motors + servo", "Unity companion app (Figma-designed UI)"],
-    caseStudy: {
-      problem: "Locating unexploded ordnance safely means driving a sensor over an area without a person walking into the hazard themselves, and without the rover blindly colliding with obstacles along the way.",
-      build: "An Arduino controls four drive-motor pins and a steering servo, reading an HC-SR04 ultrasonic sensor for real-time obstacle distance while a separate capacitive pulse/sense circuit scans for buried metal; a Unity app with a Figma-designed interface lets an operator visualize the rover's sensor readings.",
-      challenge: "Combining two very different sensing jobs — ultrasonic distance for navigation and capacitive sensing for metal detection — on one Arduino loop without one blocking the timing of the other.",
-      result: "A working hardware prototype demoed at Devils Invent: an Arduino rover that steers around obstacles while scanning for buried metal, paired with a Unity-based visualization app.",
-    },
-  },
-};
-
-// Repos that are course assignments, practice repos, or duplicate deploy
-// mirrors of a curated repo — never auto-surfaced as project cards.
-const SKIP_SLUGS = new Set([
-  "assingment4", "Gitpractice", "hello-ananya",
-  "LAHacksChatbot-Deploy", GITHUB_USER,
-]);
-
-const FALLBACK_PROJECTS = Object.values(CURATED).map((p) => ({
-  ...p,
-  link: `https://github.com/${GITHUB_USER}`,
-}));
-
-async function fetchGithubProjects() {
-  const res = await fetch(`/api/github-projects`);
-  if (!res.ok) throw new Error("GitHub API request failed");
-  const repos = await res.json();
-  return repos
-    .filter((r) => !SKIP_SLUGS.has(r.name))
-    .filter((r) => CURATED[r.name] || !r.fork)
-    .map((r) => {
-      const curated = CURATED[r.name];
-      if (curated) return { ...curated, link: r.html_url };
-      const tagline = r.description || `A ${r.language || "code"} project on Ananya's GitHub`;
-      return {
-        name: r.name,
-        tagline,
-        desc: r.description || `${tagline}. See the repository for full details.`,
-        stack: r.language ? [r.language] : [],
-        focus: "From GitHub",
-        highlight: r.stargazers_count ? `${r.stargazers_count} stars` : "Auto-synced from GitHub",
-        link: r.html_url,
-      };
-    });
-}
-
-// Manually maintained — LinkedIn has no public API for fetching a user's
-// posts, so this list is updated by hand whenever Ananya posts something
-// worth surfacing. Newest first.
-const POSTS = [
-  {
-    title: "Frontier Signals #01: Infrastructure Behind Physical AI",
-    summary: "Attended an evening at the AWS Builder Loft in San Francisco exploring Physical AI — infrastructure, perception, reasoning, simulation, and deployment — with speakers from OpenAI, Midjourney, Meta AI, and Collinear Labs.",
-    date: "Aug 2026",
-    link: "https://www.linkedin.com/feed/update/urn:li:activity:7493121569737822208/",
-    image: null,
-  },
-  {
-    title: "Attending the Claude Impact Lab in San Francisco",
-    summary: "Spent the day at Anthropic's Claude Impact Lab in SF, learning from builders experimenting with AI and swapping ideas with the community.",
-    date: "Aug 2026",
-    link: "https://www.linkedin.com/feed/update/urn:li:activity:7491890734128623616/",
-    image: null,
-  },
-  {
-    title: "Moved to San Francisco to start the next chapter",
-    summary: "After graduating summa cum laude from ASU, moved to SF to be closer to the tech community — kicked things off at an \"Agents That Pay\" event on agentic payments infrastructure.",
-    date: "Aug 2026",
-    link: "https://www.linkedin.com/feed/update/urn:li:activity:7491194696707379200/",
-    image: "/linkedin/moved-to-sf.jpg",
-  },
-  {
-    title: "Graduated from Arizona State University 🎓",
-    summary: "Graduated summa cum laude with a B.S. in Computer Science and a 3.93 GPA, capping four years of leadership with WiCS and the Coalition of International Students.",
-    date: "Jun 2026",
-    link: "https://www.linkedin.com/feed/update/urn:li:activity:7467379819509436416/",
-    image: "/linkedin/graduation.jpg",
-  },
-  {
-    title: "Wrapped up her ASU Capstone project",
-    summary: "Delivered the DigiClips AWS Lightsail capstone project, gaining hands-on experience with AWS deployment, HTTPS/SSL, reverse proxies, and production support.",
-    date: "May 2026",
-    link: "https://www.linkedin.com/feed/update/urn:li:activity:7460095715202035712/",
-    image: "/linkedin/capstone.jpg",
-  },
-  {
-    title: "🚀 VoiceGuide — AI navigation for the visually impaired",
-    summary: "Built an AI-powered web app with teammates that narrates surroundings in real time using OpenAI Vision, Whisper, and TTS, helping blind and low-vision users navigate independently.",
-    date: "Apr 2026",
-    link: "https://www.linkedin.com/feed/update/urn:li:activity:7448037094490308608/",
-    image: "/linkedin/voiceguide-demo.jpg",
-  },
-  {
-    title: "Named to the Dean's List — Fall 2025",
-    summary: "Recognized for a 4.27 GPA at ASU's Ira A. Fulton Schools of Engineering while balancing coursework with leadership and volunteering.",
-    date: "Jan 2026",
-    link: "https://www.linkedin.com/feed/update/urn:li:activity:7416856556333350912/",
-    image: "/linkedin/deans-list.jpg",
-  },
-  {
-    title: "Volunteering with JA BizTown",
-    summary: "Spent the day helping 4th and 5th graders run simulated businesses through Junior Achievement's BizTown program, teaching teamwork and financial literacy.",
-    date: "Jan 2026",
-    link: "https://www.linkedin.com/feed/update/urn:li:activity:7416139330693431296/",
-    image: "/linkedin/ja-biztown.jpg",
-  },
-  {
-    title: "✨ Reflecting on a semester as WiCS Mentorship Director ✨",
-    summary: "Presented at the WiCS Final Semester Banquet after a semester guiding five mentee teams, plus a visit to Intel's office that shaped her interest in cloud engineering.",
-    date: "Nov 2025",
-    link: "https://www.linkedin.com/feed/update/urn:li:activity:7399201411168862209/",
-    image: "/linkedin/wics-banquet.jpg",
-  },
-  {
-    title: "🌟 Grateful, Inspired, and Empowered after GHC 2025 🌟",
-    summary: "Spent four days at the Grace Hopper Celebration in Chicago, connecting with professionals from Amazon, Cloudflare, NVIDIA, and more around cloud computing and AI.",
-    date: "Nov 2025",
-    link: "https://www.linkedin.com/feed/update/urn:li:activity:7394026167994867712/",
-    image: "/linkedin/ghc2025.jpg",
-  },
-];
-
-const EXPERIENCE = [
-  { role: "Entrepreneurship Student Grader", org: "Arizona State University", dates: "Aug 2025 - May 2026", desc: "Evaluated 100-150+ assignments weekly with AI-assisted tools; contributed to a 10% improvement in course performance across 50+ students." },
-  { role: "Intern", org: "Principled Innovation Academy, ASU", dates: "May 2025 - Jul 2025", desc: "Built an AI-powered platform automating 500+ internship applications and resume customization using LLMs; NLP pipelines hit 95% accuracy in resume parsing and role matching." },
-  { role: "Undergraduate Teaching Assistant", org: "Intro to Engineering, ASU", dates: "Aug 2024 - Dec 2024", desc: "Supported 40 students with MATLAB and Arduino projects; built an interactive graph-based game to teach programming logic." },
-  { role: "Cloud Support Engineer", org: "eWebGuru, India", dates: "May 2024 - Jul 2024", desc: "Managed 30+ Linux/Windows servers across VPS and shared hosting; configured Apache, DNS, and SSL, resolved production issues via SSH, and supported 70+ hosting clients using cPanel and DirectAdmin." },
-];
-
-const LEADERSHIP = [
-  { role: "Mentorship Program Director", org: "Women in Computer Science, ASU", dates: "Jan 2025 - May 2026", desc: "Led the WiCS mentorship program guiding multiple mentee teams, and participated in weekly computer science and software engineering meetings." },
-  { role: "Public Relations Director", org: "Coalition of International Students, ASU", dates: "May 2025 - May 2026", desc: "Oversaw outreach and engagement for 50+ cultural clubs through events, email, and social media." },
-];
-
-const EDUCATION = {
-  school: "Arizona State University",
-  degree: "Bachelor of Computer Science",
-  location: "Tempe, AZ",
-  dates: "Aug 2022 - May 2026",
-  gpa: "3.93 GPA",
-};
-
-const CERTIFICATIONS = [
-  { name: "AWS Certified Cloud Practitioner", org: "Amazon Web Services", date: "2025", url: "https://www.credly.com/badges/4f070e36-cbae-411c-97ba-09b8f04507b3/linked_in_profile" },
-  { name: "Unconscious Bias", org: "LinkedIn Learning", date: "2025", url: "https://www.linkedin.com/learning/certificates/8f6971cec9551939b8aaaae48bcd3f846fc78b3741847aac1221e40f5620184d" },
-];
-
-const SKILL_GROUPS = [
-  { label: "Languages", items: ["Python", "Java", "C/C++", "SQL", "Swift"] },
-  { label: "Cloud", items: ["AWS EC2", "AWS S3", "AWS Lambda", "Cognito", "Route 53", "Lightsail", "Cloudflare Workers"] },
-  { label: "Databases", items: ["MySQL", "MongoDB", "Aurora"] },
-  { label: "AI / ML", items: ["OpenCV", "TensorFlow", "Keras", "Hugging Face"] },
-  { label: "Tools", items: ["Git/GitHub", "Linux", "Apache", "SSH", "Figma"] },
-];
-
-// Some model responses over-escape newlines inside the JSON string (literal
-// backslash-n instead of an actual line break) — normalize either form to a
-// real newline so paragraph breaks always render correctly.
-function normalizeChatText(text) {
-  return typeof text === "string" ? text.replace(/\\n/g, "\n") : text;
-}
-
-function buildSystemPrompt(projects) {
-  const projectSummaries = projects
-    .map((p) => {
-      const base = `- ${p.name}${p.date ? ` (${p.date})` : ""}: ${p.desc} Stack: ${p.stack.join(", ") || "n/a"}.`;
-      if (!p.caseStudy) return base;
-      const cs = p.caseStudy;
-      return `${base}\n  Engineering challenge: ${cs.challenge} Result: ${cs.result}${p.archFlow ? ` Architecture: ${p.archFlow.join(" → ")}.` : ""}`;
-    })
-    .join("\n");
-
-  return `
-You are the AI assistant embedded in Ananya Arora's portfolio site. Visitors — often recruiters — chat with you to learn about her in depth. Answer confidently and specifically, like someone who knows her work well.
-
-Respond ONLY using the facts below. Never invent projects, employers, dates, numbers, or LinkedIn posts.
-
-EDUCATION: ${EDUCATION.school}, ${EDUCATION.location} — ${EDUCATION.degree}, ${EDUCATION.dates}, ${EDUCATION.gpa}.
-CERTIFICATIONS: ${CERTIFICATIONS.map((c) => `${c.name} (${c.org}, ${c.date})`).join(", ")}.
-
-SKILLS BY CATEGORY:
-${SKILL_GROUPS.map((g) => `- ${g.label}: ${g.items.join(", ")}`).join("\n")}
-
-LEADERSHIP:
-${LEADERSHIP.map((l) => `- ${l.role}, ${l.org} (${l.dates}): ${l.desc}`).join("\n")}
-
-EXPERIENCE (full detail — draw on this for any specific question about a role):
-${EXPERIENCE.map((e) => `- ${e.role} at ${e.org} (${e.dates}): ${e.desc}`).join("\n")}
-
-PROJECTS (full detail — draw on this for any specific question about a project; cite concrete stack/architecture details and outcomes rather than just repeating the tagline):
-${projectSummaries}
-This list reflects ALL ${projects.length} of her current public, non-fork GitHub repositories, synced live moments ago. If asked how many repos or projects she has, answer with exactly ${projects.length} — do not hedge or say there might be more.
-
-She recently moved to San Francisco after graduating summa cum laude and is open to full-time software engineering / AI roles.
-
-CONTACT & LINKS: GitHub: https://github.com/Ananyaarora24 | LinkedIn: https://www.linkedin.com/in/ananyaaro/ | Email: ananya.arora.tech@gmail.com
-When asked for her GitHub, LinkedIn, portfolio links, or how to contact/reach her, state the relevant link(s) directly in your reply (write out the full URL) and set widget to {"type": "links"}.
-
-RECENT LINKEDIN POSTS (use these as concrete, timely examples when relevant — reference the post by title/date rather than gesturing at "her LinkedIn" vaguely):
-${POSTS.map((p) => `- "${p.title}" (${p.date}) — ${p.summary}`).join("\n")}
-When asked about her recent LinkedIn posts, activity, or what she's been posting about, summarize from the list above and set widget to {"type": "posts"}.
-
-RESPONSE DEPTH — this matters:
-- Broad/overview questions ("what does she do", "tell me about her") → keep it to 2-4 sentences, third person.
-- Specific questions, or "tell me more" / "explain" / "walk me through" about ONE project, her certification, her education, a specific skill, or a specific role → write a genuinely detailed answer: 2-4 short paragraphs with a real blank line between each paragraph (inside the JSON string, that means an actual newline-newline break, not the literal characters backslash-n), covering what it does or did, how it was built (real stack/architecture detail from PROJECTS or EXPERIENCE above), and a concrete metric or outcome. Where it fits naturally, tie in a specific recent LinkedIn post (by title) or a specific project detail as a real example — never gesture vaguely at "her GitHub" or "her LinkedIn" without citing something concrete from the lists above.
-- Never pad with generic filler ("she is passionate about technology") — every sentence should carry a specific fact from the lists above.
-- Always third person, always grounded only in the facts above.
-
-Respond with ONLY valid JSON (no markdown fences, no preamble), matching exactly this shape:
-{"reply": "the answer, following the RESPONSE DEPTH rules above", "widget": WIDGET}
-
-WIDGET is one of:
-- null (for general questions with no specific project/timeline/contact focus)
-- {"type": "projects", "names": ["Exact Project Name", ...]} — MANDATORY, not optional, any time your reply names and discusses one or more specific projects. This includes "tell me about X", "engineering story behind X", "walk me through X", "explain X in detail" — any answer whose subject is a named project. 1 to 4 names. This is what lets the visitor click through to the live GitHub repo, so never leave it null when a project is the actual subject of the answer.
-- {"type": "timeline"} — when asked about her career, experience, or work history
-- {"type": "comparison", "names": ["Exact Project Name", "Exact Project Name"]} — exactly 2-3 names, only when asked to compare projects
-- {"type": "links"} — when asked for GitHub, LinkedIn, portfolio, or contact info
-- {"type": "posts"} — MANDATORY any time your reply cites one or more specific LinkedIn posts by title, even as a supporting example inside an answer about something else — not only when the user explicitly asks for her recent activity. If you mention a post's title in the reply, set this widget so the visitor can open the real post.
-
-If a question can't be answered from the facts above, set widget to null and say you don't have that detail, suggesting they email ananya.arora.tech@gmail.com.
-`.trim();
-}
-
-const STARTERS = [
-  "What's the engineering story behind VoiceGuide?",
-  "Walk me through her experience",
-  "What's her AWS certification?",
-  "Compare her AI projects",
-  "Show me all her projects",
-];
-
-const FEATURED_NAMES = ["VoiceGuide", "SimplyGraph", "Hand Gesture Recognition"];
-
-function SectionLabel({ children }) {
-  return (
-    <div style={{
-      fontFamily: "'JetBrains Mono', monospace", fontSize: 11.5, fontWeight: 500, letterSpacing: 0.5,
-      textTransform: "uppercase", color: COLORS.slateMuted, marginBottom: 12,
-    }}>{children}</div>
-  );
-}
-
-function ProjectCard({ project, onOpen }) {
-  return (
-    <button onClick={() => onOpen(project.name)} style={{
-      textAlign: "left", background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10,
-      padding: 14, cursor: "pointer", width: "100%",
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-        <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14, color: "white" }}>{project.name}</div>
-        {project.date && <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: COLORS.slateMuted, flexShrink: 0 }}>{project.date}</div>}
-      </div>
-      <div style={{ fontSize: 12.5, color: COLORS.slateMuted, marginTop: 4, lineHeight: 1.4 }}>{project.tagline}</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-        {project.stack.slice(0, 3).map((s) => (
-          <span key={s} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: COLORS.teal, background: "rgba(94,234,212,0.08)", padding: "2px 7px", borderRadius: 5 }}>{s}</span>
-        ))}
-      </div>
-    </button>
-  );
-}
-
-function ProjectsWidget({ names, onOpen, projects }) {
-  const items = projects.filter((p) => names.includes(p.name));
-  if (!items.length) return null;
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: items.length > 1 ? "1fr 1fr" : "1fr", gap: 10, marginTop: 10 }}>
-      {items.map((p) => <ProjectCard key={p.name} project={p} onOpen={onOpen} />)}
-    </div>
-  );
-}
-
-function ComparisonWidget({ names, onOpen, projects }) {
-  const items = projects.filter((p) => names.includes(p.name));
-  if (items.length < 2) return null;
-  const rows = ["focus", "highlight", "stack"];
-  const rowLabel = { focus: "Focus", highlight: "Highlight", stack: "Stack" };
-  return (
-    <div style={{ marginTop: 10, border: `1px solid ${COLORS.border}`, borderRadius: 10, overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: `120px repeat(${items.length}, 1fr)` }}>
-        <div style={{ padding: 10, background: COLORS.bg }} />
-        {items.map((p) => (
-          <button key={p.name} onClick={() => onOpen(p.name)} style={{
-            padding: 10, background: COLORS.bg, border: "none", borderLeft: `1px solid ${COLORS.border}`,
-            fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13, color: "white", cursor: "pointer", textAlign: "left",
-          }}>{p.name}</button>
-        ))}
-      </div>
-      {rows.map((row) => (
-        <div key={row} style={{ display: "grid", gridTemplateColumns: `120px repeat(${items.length}, 1fr)`, borderTop: `1px solid ${COLORS.border}` }}>
-          <div style={{ padding: 10, fontSize: 11.5, color: COLORS.slateMuted, background: COLORS.bgCard }}>{rowLabel[row]}</div>
-          {items.map((p) => (
-            <div key={p.name + row} style={{ padding: 10, fontSize: 12, color: COLORS.slate, borderLeft: `1px solid ${COLORS.border}`, background: COLORS.bgCard }}>
-              {Array.isArray(p[row]) ? p[row].join(", ") : p[row]}
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ArchDiagram({ flow }) {
-  if (!flow?.length) return null;
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-      {flow.map((step, i) => (
-        <div key={step} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{
-            fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: COLORS.slate,
-            background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 6, padding: "5px 9px",
-          }}>{step}</span>
-          {i < flow.length - 1 && <span style={{ color: COLORS.amber, fontSize: 12 }}>→</span>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function CaseStudy({ caseStudy }) {
-  if (!caseStudy) return null;
-  const rows = [
-    ["Problem", caseStudy.problem],
-    ["What I built", caseStudy.build],
-    ["Engineering challenge", caseStudy.challenge],
-    ["Result", caseStudy.result],
-  ];
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {rows.map(([label, text]) => (
-        <div key={label}>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: 0.4, textTransform: "uppercase", color: COLORS.slateMuted, marginBottom: 3 }}>{label}</div>
-          <div style={{ fontSize: 12.5, color: COLORS.slate, lineHeight: 1.55 }}>{text}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function LinksWidget() {
-  const links = [
-    { label: "GitHub", href: "https://github.com/Ananyaarora24", Icon: Github },
-    { label: "LinkedIn", href: "https://www.linkedin.com/in/ananyaaro/", Icon: Linkedin },
-    { label: "Email", href: "mailto:ananya.arora.tech@gmail.com", Icon: Mail },
-  ];
-  return (
-    <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-      {links.map(({ label, href, Icon }) => (
-        <a key={label} href={href} target="_blank" rel="noreferrer" style={{
-          display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.slate,
-          background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 8,
-          padding: "8px 12px", textDecoration: "none",
-        }}>
-          <Icon size={14} color={COLORS.teal} /> {label}
-        </a>
-      ))}
-    </div>
-  );
-}
-
-function PostsWidget() {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-      {POSTS.map((p) => (
-        <a key={p.title} href={p.link} target="_blank" rel="noreferrer" style={{
-          display: "flex", gap: 12, background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10,
-          padding: 14, textDecoration: "none",
-        }}>
-          {p.image && (
-            <img src={p.image} alt="" style={{
-              width: 64, height: 64, objectFit: "cover", borderRadius: 8, flexShrink: 0,
-              border: `1px solid ${COLORS.border}`,
-            }} />
-          )}
-          <div style={{ minWidth: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13.5, color: "white" }}>{p.title}</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: COLORS.teal, flexShrink: 0 }}>{p.date}</div>
-            </div>
-            <div style={{ fontSize: 12.5, color: COLORS.slateMuted, marginTop: 4, lineHeight: 1.4 }}>{p.summary}</div>
-          </div>
-        </a>
-      ))}
-    </div>
-  );
-}
-
-function TimelineWidget() {
-  return (
-    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 0 }}>
-      {EXPERIENCE.map((e, i) => (
-        <div key={e.role} style={{ display: "flex", gap: 12 }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: COLORS.amber, marginTop: 6 }} />
-            {i < EXPERIENCE.length - 1 && <div style={{ width: 1, flex: 1, background: COLORS.border, minHeight: 30 }} />}
-          </div>
-          <div style={{ paddingBottom: 16 }}>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: COLORS.teal }}>{e.dates}</div>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13.5, color: "white", marginTop: 2 }}>{e.role}</div>
-            <div style={{ fontSize: 12, color: COLORS.slateMuted }}>{e.org}</div>
-            <div style={{ fontSize: 12.5, color: COLORS.slate, marginTop: 4, lineHeight: 1.5 }}>{e.desc}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+// Consistent gap between major homepage sections — replaces four slightly
+// different ad-hoc values (44/44/44/48) that had drifted apart.
+const SECTION_GAP = space.xxxl;
 
 export default function Portfolio() {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sidePanel, setSidePanel] = useState(null);
   const [projects, setProjects] = useState(FALLBACK_PROJECTS);
   const [syncStatus, setSyncStatus] = useState("syncing");
+  // Decoupled from `messages` on purpose: switching to the portfolio view
+  // must never clear chat history (see AppHeader "Back to portfolio").
+  const [view, setView] = useState("home");
+  const [pendingScroll, setPendingScroll] = useState(null);
   const scrollRef = useRef(null);
   const heroScrollRef = useRef(null);
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, loading]);
+    if (view === "chat" && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, loading, view]);
+
+  useEffect(() => {
+    if (view !== "home" || !pendingScroll) return;
+    const id = requestAnimationFrame(() => {
+      if (pendingScroll === "__top__") {
+        heroScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        document.getElementById(pendingScroll)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      setPendingScroll(null);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [view, pendingScroll]);
 
   useEffect(() => {
     let cancelled = false;
@@ -585,12 +71,31 @@ export default function Portfolio() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    if (!sidePanel) return;
+    function onKeyDown(e) {
+      if (e.key === "Escape") setSidePanel(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [sidePanel]);
+
+  function goHome(id) {
+    setView("home");
+    setPendingScroll(id || "__top__");
+  }
+
+  function goChat() {
+    if (messages.length > 0) setView("chat");
+    else goHome("chat");
+  }
+
   async function send(text) {
-    const q = (text ?? input).trim();
+    const q = text.trim();
     if (!q || loading) return;
     const next = [...messages, { role: "user", content: q }];
     setMessages(next);
-    setInput("");
+    setView("chat");
     setLoading(true);
     try {
       const res = await fetch("/api/chat", {
@@ -603,325 +108,367 @@ export default function Portfolio() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMessages((prev) => [...prev, { role: "assistant", content: data.error || "Something went wrong.", widget: null }]);
+        setMessages((prev) => [...prev, { role: "assistant", isError: true, content: data.error || "Something went wrong on my end — please try again, or use the Resume / Email links above.", widget: null }]);
         return;
       }
       setMessages((prev) => [...prev, { role: "assistant", content: normalizeChatText(data.reply), widget: data.widget }]);
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Couldn't reach the assistant just now — please try again.", widget: null }]);
+      setMessages((prev) => [...prev, { role: "assistant", isError: true, content: "Couldn't reach the assistant just now — please try again, or use the Resume / Email links above.", widget: null }]);
     } finally {
       setLoading(false);
     }
   }
 
-  const empty = messages.length === 0;
   const panelProject = sidePanel ? projects.find((p) => p.name === sidePanel) : null;
+  // Ordered by FEATURED_NAMES (Ananya's requested priority), not by sync
+  // recency, so the featured order stays stable whether or not GitHub sync
+  // has landed yet.
+  const featuredProjects = FEATURED_NAMES.map((name) => projects.find((p) => p.name === name)).filter(Boolean);
+  const additionalProjects = projects.filter((p) => !FEATURED_NAMES.includes(p.name));
 
   return (
-    <div style={{ background: COLORS.bg, height: "100vh", display: "flex", fontFamily: "'Inter', sans-serif", overflow: "hidden" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
-        ::placeholder { color: ${COLORS.slateMuted}; }
-        .chip:hover { background: ${COLORS.bgHover} !important; }
-        .navlink { transition: color 0.15s; }
-        .navlink:hover { color: white !important; }
-        .nav-scroll::-webkit-scrollbar { display: none; }
-        .pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
-        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        @media (max-width: 720px) {
-          .sync-status { display: none !important; }
-        }
-        @media (max-width: 860px) {
-          .side-panel { position: fixed !important; inset: 0 !important; width: 100% !important; z-index: 50; }
-          .side-panel-backdrop { display: block !important; }
-        }
-      `}</style>
+    <MotionConfig reducedMotion="user">
+      <div style={{ background: colors.bg, height: "100vh", display: "flex", fontFamily: font.body, overflow: "hidden" }}>
+        <style>{`
+          ::placeholder { color: ${colors.slateMuted}; }
+          .chip:hover { background: ${colors.bgHover} !important; }
+          .icon-link:hover { background: ${colors.bgHover} !important; }
+          .navlink { transition: color 0.15s; }
+          .navlink:hover { color: white !important; }
+          .back-link:hover { opacity: 0.8; }
+          .nav-scroll::-webkit-scrollbar { display: none; }
+          .pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+          @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: `1px solid ${COLORS.border}`, flexShrink: 0, gap: 16 }}>
-          <button onClick={() => setMessages([])} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
-            <Sparkles size={16} color={COLORS.amber} />
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: "white" }}>Ananya Arora</span>
-          </button>
-          {empty && (
-            <nav className="nav-scroll" style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "nowrap", overflowX: "auto", minWidth: 0, scrollbarWidth: "none" }}>
-              {[["Skills", "#skills"], ["Projects", "#projects"], ["Experience", "#experience"], ["Certifications", "#certifications"], ["Leadership", "#leadership"], ["Chat", "#chat"]].map(([label, href]) => (
-                <a key={href} href={href} className="navlink" style={{ fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "none", whiteSpace: "nowrap" }}>{label}</a>
-              ))}
-            </nav>
-          )}
-          <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
-            {syncStatus === "syncing" && (
-              <span className="sync-status" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: COLORS.slateMuted }}>
-                <Loader2 size={12} className="animate-spin" /> Syncing GitHub…
-              </span>
+          /* Featured Work grid — 2-up on desktop, "lg" cards span the full
+             row; a lg card's visual sits beside its text on wide screens
+             and stacks above it everywhere narrower, so it never gets
+             overly tall on mobile. */
+          .featured-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: ${space.xl}px; }
+          .featured-card-main { display: flex; flex-direction: column; }
+          .featured-card-ctas { flex-direction: row; }
+          .project-visual { min-height: 150px; }
+          .featured-card-lg .project-visual { min-height: 190px; }
+          @media (min-width: 860px) {
+            .featured-card-lg { flex-direction: row !important; }
+            .featured-card-lg .featured-card-main { flex: 1 1 auto; flex-direction: row !important; align-items: stretch; min-width: 0; }
+            .featured-card-lg .project-visual { flex: 0 0 42%; min-height: auto; }
+            .featured-card-lg .featured-card-ctas { flex-direction: column !important; justify-content: center; border-top: none !important; border-left: 1px solid ${colors.border}; }
+          }
+          @media (max-width: 720px) {
+            .featured-grid { grid-template-columns: 1fr; }
+          }
+          .cta-link:hover { color: white !important; }
+          .cta-arrow-icon { transition: transform 0.15s ease; }
+          .cta-arrow:hover .cta-arrow-icon { transform: translateX(3px); }
+
+          /* Architecture diagram: horizontal chain on desktop, stacks to a
+             vertical flow (arrow rotated to point down) on narrow screens. */
+          .arch-arrow { transition: transform 0.15s ease; }
+          @media (max-width: 480px) {
+            .arch-lane { flex-direction: column !important; align-items: flex-start !important; }
+            .arch-arrow { transform: rotate(90deg); margin-left: 4px; }
+          }
+
+          @media (max-width: 720px) {
+            .sync-status { display: none !important; }
+          }
+          @media (max-width: 1200px) {
+            .app-header { flex-wrap: wrap; row-gap: ${space.sm}px; }
+            .app-nav { order: 3; flex-basis: 100%; width: 100%; }
+          }
+          @media (max-width: 480px) {
+            .resume-cta-label { display: none !important; }
+            .app-header { padding-left: ${space.lg}px !important; padding-right: ${space.lg}px !important; }
+            .hero-scroll, .chat-scroll, .chat-input-bar { padding-left: ${space.lg}px !important; padding-right: ${space.lg}px !important; }
+            .side-panel { padding: ${space.lg}px !important; }
+          }
+          @media (max-width: 860px) {
+            .side-panel { position: fixed !important; inset: 0 !important; width: 100% !important; z-index: 50; }
+            .side-panel-backdrop { display: block !important; }
+          }
+        `}</style>
+
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <AppHeader
+            view={view}
+            hasMessages={messages.length > 0}
+            syncStatus={syncStatus}
+            projectCount={projects.length}
+            onGoHome={goHome}
+            onGoChat={goChat}
+          />
+
+          <AnimatePresence mode="wait">
+            {view === "home" ? (
+              <motion.div key="home" {...viewTransition} ref={heroScrollRef} className="hero-scroll" style={{ flex: 1, overflowY: "auto", padding: `${space.xxxl}px ${space.xl}px ${space.huge}px` }}>
+                <div style={{ width: "100%", maxWidth: 880, margin: "0 auto" }}>
+                  {/* Agent hero */}
+                  <motion.div variants={heroContainer} initial="hidden" animate="visible" style={{ textAlign: "center", marginBottom: SECTION_GAP, paddingTop: space.sm }}>
+                    <motion.div variants={heroItem} style={{
+                      display: "inline-flex", alignItems: "center", gap: 7, fontFamily: font.mono,
+                      fontSize: type.micro, color: colors.teal, background: "rgba(94,234,212,0.08)", border: `1px solid ${colors.border}`,
+                      borderRadius: radius.pill, padding: "5px 12px", marginBottom: space.lg,
+                    }}>
+                      <span className="pulse-dot" aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: colors.teal, display: "inline-block" }} />
+                      AI agent online · ask me anything
+                    </motion.div>
+                    <motion.h1 variants={heroItem} style={{ fontFamily: font.display, fontWeight: 700, fontSize: type.display, color: "white", marginBottom: space.sm }}>
+                      {PROFILE.name}
+                    </motion.h1>
+                    <motion.p variants={heroItem} style={{ color: colors.teal, fontSize: type.emphasis, fontFamily: font.display, fontWeight: 600, marginBottom: space.lg }}>
+                      {PROFILE.tagline}
+                    </motion.p>
+
+                    <motion.div variants={heroItem}>
+                      <IdentityBar />
+                    </motion.div>
+
+                    <motion.div variants={heroItem} id="chat" style={{ maxWidth: 620, margin: "0 auto" }}>
+                      <ChatInput
+                        onSend={send} loading={loading}
+                        large
+                        placeholder="Ask about her projects, skills, or experience…"
+                      />
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: space.sm, marginTop: space.md, justifyContent: "center" }}>
+                        {STARTERS.map((s) => (
+                          <motion.button key={s} className="chip" onClick={() => send(s)} {...hoverLift} style={{
+                            fontSize: type.body, color: colors.slate, background: colors.bgCard, border: `1px solid ${colors.border}`,
+                            borderRadius: radius.pill, padding: "7px 13px", cursor: "pointer",
+                          }}>{s}</motion.button>
+                        ))}
+                      </div>
+                    </motion.div>
+
+                    <motion.div variants={heroItem} style={{ display: "flex", gap: space.lg, justifyContent: "center", marginTop: space.xl, flexWrap: "wrap", alignItems: "center" }}>
+                      <a href="#skills" onClick={(e) => { e.preventDefault(); goHome("skills"); }} className="navlink" style={{ fontSize: type.body, color: colors.slateMuted, textDecoration: "underline" }}>
+                        Or browse her work below ↓
+                      </a>
+                      <span style={{ color: colors.border }} aria-hidden="true">·</span>
+                      <a href={`mailto:${PROFILE.email}`} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: type.body, color: colors.slateMuted, textDecoration: "none" }}><Mail size={12} aria-hidden="true" /> Email</a>
+                      <a href={PROFILE.linkedinUrl} target="_blank" rel="noreferrer" aria-label="LinkedIn (opens in new tab)" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: type.body, color: colors.slateMuted, textDecoration: "none" }}><Linkedin size={12} aria-hidden="true" /> LinkedIn</a>
+                      <a href={PROFILE.githubUrl} target="_blank" rel="noreferrer" aria-label="GitHub (opens in new tab)" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: type.body, color: colors.slateMuted, textDecoration: "none" }}><Github size={12} aria-hidden="true" /> GitHub</a>
+                    </motion.div>
+                  </motion.div>
+
+                  {/* Skills */}
+                  <Reveal id="skills" style={{ marginBottom: SECTION_GAP }}>
+                    <SectionLabel>Skills</SectionLabel>
+                    <div style={{ display: "flex", flexDirection: "column", gap: space.sm }}>
+                      {SKILL_GROUPS.map((g) => (
+                        <div key={g.label} style={{ display: "flex", alignItems: "baseline", gap: space.md, flexWrap: "wrap" }}>
+                          <div style={{ fontSize: type.small, color: colors.slateMuted, width: 88, flexShrink: 0 }}>{g.label}</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: space.sm }}>
+                            {g.items.map((s) => (
+                              <span key={s} style={{
+                                fontFamily: font.mono, fontSize: type.body, color: colors.teal,
+                                background: "rgba(94,234,212,0.08)", border: `1px solid ${colors.border}`, padding: "5px 10px", borderRadius: radius.sm,
+                              }}>{s}</span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Reveal>
+
+                  {/* Featured work */}
+                  <div id="projects" style={{ marginBottom: SECTION_GAP }}>
+                    <SectionLabel>Featured Work</SectionLabel>
+                    <motion.div
+                      variants={staggerContainer} initial="hidden" whileInView="visible" viewport={sectionViewport}
+                      className="featured-grid"
+                    >
+                      {featuredProjects.map((p, i) => (
+                        <FeaturedProjectCard key={p.name} project={p} onOpen={setSidePanel} size={i < 2 ? "lg" : "md"} />
+                      ))}
+                    </motion.div>
+
+                    {additionalProjects.length > 0 && (
+                      <div style={{ marginTop: SECTION_GAP }}>
+                        <SectionLabel as="h3">Additional Projects</SectionLabel>
+                        <ProjectGrid projects={additionalProjects} onOpen={setSidePanel} viewport={sectionViewport} />
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: space.sm, marginTop: space.md, alignItems: "center" }}>
+                      <button className="chip" onClick={() => send("Show me all her projects")} style={{
+                        fontSize: type.body, color: colors.slateMuted, background: "none", border: "none",
+                        cursor: "pointer", padding: 0, textDecoration: "underline",
+                      }}>See all {projects.length} projects →</button>
+                      <span style={{ fontSize: type.small, color: colors.slateMuted }}>· click a project, or ask the AI, for the full engineering story</span>
+                    </div>
+                  </div>
+
+                  {/* Experience */}
+                  <Reveal id="experience" style={{ marginBottom: SECTION_GAP }}>
+                    <SectionLabel>Experience</SectionLabel>
+                    <TimelineWidget />
+                  </Reveal>
+
+                  {/* Certifications + Education */}
+                  <Reveal id="certifications" style={{ marginBottom: SECTION_GAP, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: space.xl }}>
+                    <div>
+                      <SectionLabel>Certifications</SectionLabel>
+                      {CERTIFICATIONS.map((c) => (
+                        <div key={c.name} style={{ border: `1px solid ${colors.border}`, borderRadius: radius.md, padding: space.lg }}>
+                          {c.url ? (
+                            <a href={c.url} target="_blank" rel="noopener noreferrer" aria-label={`${c.name} (opens in new tab)`} style={{ fontFamily: font.display, fontWeight: 600, fontSize: type.base, color: "white", textDecoration: "none" }}>
+                              {c.name}
+                            </a>
+                          ) : (
+                            <div style={{ fontFamily: font.display, fontWeight: 600, fontSize: type.base, color: "white" }}>{c.name}</div>
+                          )}
+                          <div style={{ fontSize: type.small, color: colors.slateMuted, marginTop: 3 }}>{c.org} · {c.date}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <SectionLabel id="education">Education</SectionLabel>
+                      <div style={{ border: `1px solid ${colors.border}`, borderRadius: radius.md, padding: space.lg }}>
+                        <div style={{ fontFamily: font.display, fontWeight: 600, fontSize: type.base, color: "white" }}>{EDUCATION.school}</div>
+                        <div style={{ fontSize: type.small, color: colors.slateMuted, marginTop: 3 }}>{EDUCATION.degree} · {EDUCATION.location}</div>
+                        <div style={{ fontFamily: font.mono, fontSize: type.micro, color: colors.teal, marginTop: space.xs }}>{EDUCATION.dates} · {EDUCATION.gpa}</div>
+                      </div>
+                    </div>
+                  </Reveal>
+
+                  {/* Leadership */}
+                  <Reveal id="leadership" style={{ marginBottom: SECTION_GAP }}>
+                    <SectionLabel>Leadership</SectionLabel>
+                    <div style={{ display: "flex", flexDirection: "column", gap: space.sm }}>
+                      {LEADERSHIP.map((l) => (
+                        <div key={l.role} style={{ border: `1px solid ${colors.border}`, borderRadius: radius.md, padding: space.lg }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: space.sm }}>
+                            <div style={{ fontFamily: font.display, fontWeight: 600, fontSize: type.base, color: "white" }}>{l.role}</div>
+                            <div style={{ fontFamily: font.mono, fontSize: type.micro, color: colors.teal }}>{l.dates}</div>
+                          </div>
+                          <div style={{ fontSize: type.small, color: colors.slateMuted, marginTop: 2 }}>{l.org}</div>
+                          <div style={{ fontSize: type.small, color: colors.slate, marginTop: space.xs, lineHeight: 1.5 }}>{l.desc}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </Reveal>
+
+                  {/* Recruiter contact CTA */}
+                  <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: space.xl, textAlign: "center" }}>
+                    <SectionLabel>Interested in working together?</SectionLabel>
+                    <p style={{ fontSize: type.small, color: colors.slateMuted, maxWidth: 440, margin: "0 auto", marginBottom: space.lg, lineHeight: 1.5 }}>
+                      Open to full-time Software Engineering, AI, and Cloud roles.
+                    </p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: space.sm, justifyContent: "center" }}>
+                      <motion.a href={`mailto:${PROFILE.email}`} className="cta-link" {...hoverLift} style={{
+                        display: "flex", alignItems: "center", gap: 6, fontSize: type.body, color: colors.slate,
+                        background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: radius.md, padding: "8px 14px", textDecoration: "none",
+                      }}><Mail size={14} aria-hidden="true" /> Email</motion.a>
+                      <motion.a href={PROFILE.linkedinUrl} target="_blank" rel="noreferrer" aria-label="LinkedIn (opens in new tab)" className="cta-link" {...hoverLift} style={{
+                        display: "flex", alignItems: "center", gap: 6, fontSize: type.body, color: colors.slate,
+                        background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: radius.md, padding: "8px 14px", textDecoration: "none",
+                      }}><Linkedin size={14} aria-hidden="true" /> LinkedIn</motion.a>
+                      <motion.a href={PROFILE.resumeUrl} target="_blank" rel="noreferrer" aria-label="Download résumé (PDF, opens in new tab)" {...hoverLift} style={{
+                        display: "flex", alignItems: "center", gap: 6, fontSize: type.body, color: colors.bg,
+                        background: colors.amber, border: `1px solid ${colors.amber}`, borderRadius: radius.md, padding: "8px 14px", textDecoration: "none",
+                      }}><Download size={14} aria-hidden="true" /> Resume</motion.a>
+                    </div>
+                    <button className="chip" onClick={() => goHome("__top__")} style={{
+                      marginTop: space.xl, fontSize: type.small, color: colors.slateMuted, background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline",
+                    }}>↑ Or ask the AI agent at the top</button>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div key="chat" {...viewTransition} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+                <div ref={scrollRef} role="log" aria-live="polite" aria-relevant="additions" className="chat-scroll" style={{ flex: 1, minWidth: 0, overflowY: "auto", overflowX: "hidden", padding: space.xl }}>
+                  <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", display: "flex", flexDirection: "column", gap: space.lg, boxSizing: "border-box" }}>
+                    {messages.map((m, i) => (
+                      <motion.div key={i} {...messageIn} style={{ display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start", minWidth: 0 }}>
+                        <div style={{
+                          display: "flex", alignItems: "flex-start", gap: 8,
+                          maxWidth: "85%", background: m.role === "user" ? colors.amber : colors.bgCard,
+                          color: m.role === "user" ? colors.bg : colors.slate,
+                          padding: "10px 16px", borderRadius: radius.md, fontSize: type.base, lineHeight: 1.6, whiteSpace: "pre-wrap",
+                          overflowWrap: "break-word", wordBreak: "break-word",
+                          border: m.isError ? `1px solid ${colors.amber}` : "none",
+                        }}>
+                          {m.isError && <AlertCircle size={15} color={colors.amber} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" />}
+                          <span>{m.content}</span>
+                        </div>
+                        {m.role === "assistant" && m.widget?.type === "projects" && (
+                          <div style={{ width: "85%" }}><ProjectsWidget names={m.widget.names} onOpen={setSidePanel} projects={projects} /></div>
+                        )}
+                        {m.role === "assistant" && m.widget?.type === "comparison" && (
+                          <div style={{ width: "85%" }}><ComparisonWidget names={m.widget.names} onOpen={setSidePanel} projects={projects} /></div>
+                        )}
+                        {m.role === "assistant" && m.widget?.type === "timeline" && (
+                          <div style={{ width: "85%" }}><TimelineWidget /></div>
+                        )}
+                        {m.role === "assistant" && m.widget?.type === "links" && (
+                          <div style={{ width: "85%" }}><LinksWidget /></div>
+                        )}
+                        {m.role === "assistant" && m.widget?.type === "posts" && (
+                          <div style={{ width: "85%" }}><PostsWidget /></div>
+                        )}
+                      </motion.div>
+                    ))}
+                    {loading && (
+                      <div role="status" aria-label="Assistant is typing">
+                        <Loader2 size={16} className="animate-spin" color={colors.teal} aria-hidden="true" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="chat-input-bar" style={{ padding: `${space.lg}px ${space.xl}px ${space.xl}px` }}>
+                  <div style={{ maxWidth: 680, margin: "0 auto" }}>
+                    <ChatInput onSend={send} loading={loading} />
+                  </div>
+                </div>
+              </motion.div>
             )}
-            {syncStatus === "synced" && (
-              <span className="sync-status" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: COLORS.teal }}>
-                {projects.length} projects · live from GitHub
-              </span>
-            )}
-            {syncStatus === "fallback" && (
-              <span className="sync-status" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: COLORS.amber }}>
-                GitHub sync unavailable · showing cached projects
-              </span>
-            )}
-            <a href="https://github.com/Ananyaarora24" target="_blank" rel="noreferrer" style={{ color: COLORS.slateMuted }}><Github size={17} /></a>
-            <a href="https://linkedin.com/in/ananyaaro" target="_blank" rel="noreferrer" style={{ color: COLORS.slateMuted }}><Linkedin size={17} /></a>
-            <a href="mailto:ananya.arora.tech@gmail.com" style={{ color: COLORS.slateMuted }}><Mail size={17} /></a>
-          </div>
+          </AnimatePresence>
         </div>
 
-        {empty ? (
-          <div ref={heroScrollRef} style={{ flex: 1, overflowY: "auto", padding: "48px 24px 80px" }}>
-            <div style={{ width: "100%", maxWidth: 880, margin: "0 auto" }}>
-              {/* Agent hero */}
-              <div style={{ textAlign: "center", marginBottom: 56, paddingTop: 8 }}>
-                <div style={{
-                  display: "inline-flex", alignItems: "center", gap: 7, fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 11, color: COLORS.teal, background: "rgba(94,234,212,0.08)", border: `1px solid ${COLORS.border}`,
-                  borderRadius: 20, padding: "5px 12px", marginBottom: 18,
-                }}>
-                  <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: COLORS.teal, display: "inline-block" }} />
-                  AI agent online · ask me anything
+        <AnimatePresence>
+          {panelProject && (
+            <>
+              <motion.div key="backdrop" className="side-panel-backdrop" onClick={() => setSidePanel(null)} {...backdropFade} style={{ display: "none", position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 40 }} />
+              <motion.div key="panel" className="side-panel" role="dialog" aria-modal="true" aria-label={`${panelProject.name} project details`} {...panelSlide} style={{ width: 340, borderLeft: `1px solid ${colors.border}`, background: colors.bgCard, padding: space.xl, overflowY: "auto", flexShrink: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <span style={{ fontFamily: font.mono, fontSize: type.micro, color: colors.teal }}>{panelProject.focus}</span>
+                  <motion.button onClick={() => setSidePanel(null)} aria-label="Close project details" {...tapOnly} style={{ background: "none", border: "none", color: colors.slateMuted, cursor: "pointer", padding: space.sm, margin: -space.sm }}><X size={18} aria-hidden="true" /></motion.button>
                 </div>
-                <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 32, color: "white", marginBottom: 8 }}>
-                  Ananya Arora
-                </h1>
-                <p style={{ color: COLORS.teal, fontSize: 15, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 28 }}>
-                  Software Engineer building AI-powered and cloud-native products
-                </p>
-
-                <div id="chat" style={{ maxWidth: 620, margin: "0 auto" }}>
-                  <ChatInput
-                    input={input} setInput={setInput} onSend={() => send()} loading={loading}
-                    large autoFocus
-                    placeholder="Ask about her projects, skills, or experience…"
-                  />
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14, justifyContent: "center" }}>
-                    {STARTERS.map((s) => (
-                      <button key={s} className="chip" onClick={() => send(s)} style={{
-                        fontSize: 12.5, color: COLORS.slate, background: COLORS.bgCard, border: `1px solid ${COLORS.border}`,
-                        borderRadius: 20, padding: "7px 13px", cursor: "pointer",
-                      }}>{s}</button>
+                <h2 style={{ fontFamily: font.display, fontWeight: 700, fontSize: type.title, color: "white", marginTop: space.sm }}>{panelProject.name}</h2>
+                <p style={{ fontSize: type.base, color: colors.slate, lineHeight: 1.6, marginTop: space.md }}>{panelProject.summary || panelProject.desc}</p>
+                <div style={{ marginTop: space.lg }}>
+                  <div style={{ fontSize: type.small, color: colors.slateMuted, marginBottom: space.xs }}>Stack</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: space.xs }}>
+                    {panelProject.stack.map((s) => (
+                      <span key={s} style={{ fontFamily: font.mono, fontSize: type.micro, color: colors.teal, background: "rgba(94,234,212,0.08)", padding: "3px 8px", borderRadius: radius.sm }}>{s}</span>
                     ))}
                   </div>
                 </div>
-
-                <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 28, flexWrap: "wrap", alignItems: "center" }}>
-                  <a href="#skills" className="navlink" style={{ fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "underline" }}>
-                    Or browse her work below ↓
+                {panelProject.caseStudy && (
+                  <div style={{ marginTop: space.xl, borderTop: `1px solid ${colors.border}`, paddingTop: space.lg }}>
+                    <CaseStudy project={panelProject} />
+                  </div>
+                )}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: space.lg, marginTop: space.xl }}>
+                  <a href={panelProject.link || panelProject.github} target="_blank" rel="noreferrer" aria-label={`View ${panelProject.name} on GitHub (opens in new tab)`} style={{
+                    display: "inline-flex", alignItems: "center", gap: 6, fontSize: type.body, color: colors.amber, textDecoration: "none",
+                  }}>
+                    View on GitHub <ExternalLink size={13} aria-hidden="true" />
                   </a>
-                  <span style={{ color: COLORS.border }}>·</span>
-                  <a href="mailto:ananya.arora.tech@gmail.com" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "none" }}><Mail size={12} /> Email</a>
-                  <a href="https://www.linkedin.com/in/ananyaaro/" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "none" }}><Linkedin size={12} /> LinkedIn</a>
-                  <a href="https://github.com/Ananyaarora24" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: COLORS.slateMuted, textDecoration: "none" }}><Github size={12} /> GitHub</a>
-                </div>
-              </div>
-
-              {/* Skills */}
-              <div id="skills" style={{ marginBottom: 44 }}>
-                <SectionLabel>Skills</SectionLabel>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {SKILL_GROUPS.map((g) => (
-                    <div key={g.label} style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-                      <div style={{ fontSize: 11.5, color: COLORS.slateMuted, width: 88, flexShrink: 0 }}>{g.label}</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        {g.items.map((s) => (
-                          <span key={s} style={{
-                            fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: COLORS.teal,
-                            background: "rgba(94,234,212,0.08)", border: `1px solid ${COLORS.border}`, padding: "5px 10px", borderRadius: 6,
-                          }}>{s}</span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Featured projects */}
-              <div id="projects" style={{ marginBottom: 44 }}>
-                <SectionLabel>Featured Projects</SectionLabel>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-                  {projects.filter((p) => FEATURED_NAMES.includes(p.name)).map((p) => (
-                    <ProjectCard key={p.name} project={p} onOpen={setSidePanel} />
-                  ))}
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}>
-                  <button className="chip" onClick={() => send("Show me all her projects")} style={{
-                    fontSize: 12.5, color: COLORS.slateMuted, background: "none", border: "none",
-                    cursor: "pointer", padding: 0, textDecoration: "underline",
-                  }}>See all {projects.length} projects →</button>
-                  <span style={{ fontSize: 11.5, color: COLORS.slateMuted }}>· click a project, or ask the AI, for the full engineering story</span>
-                </div>
-              </div>
-
-              {/* Experience */}
-              <div id="experience" style={{ marginBottom: 44 }}>
-                <SectionLabel>Experience</SectionLabel>
-                <TimelineWidget />
-              </div>
-
-              {/* Certifications + Education */}
-              <div id="certifications" style={{ marginBottom: 44, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-                <div>
-                  <SectionLabel>Certifications</SectionLabel>
-                  {CERTIFICATIONS.map((c) => (
-                    <div key={c.name} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 14 }}>
-                      {c.url ? (
-                        <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13.5, color: "white", textDecoration: "none" }}>
-                          {c.name}
-                        </a>
-                      ) : (
-                        <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13.5, color: "white" }}>{c.name}</div>
-                      )}
-                      <div style={{ fontSize: 12, color: COLORS.slateMuted, marginTop: 3 }}>{c.org} · {c.date}</div>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <SectionLabel>Education</SectionLabel>
-                  <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 14 }}>
-                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13.5, color: "white" }}>{EDUCATION.school}</div>
-                    <div style={{ fontSize: 12, color: COLORS.slateMuted, marginTop: 3 }}>{EDUCATION.degree} · {EDUCATION.location}</div>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: COLORS.teal, marginTop: 6 }}>{EDUCATION.dates} · {EDUCATION.gpa}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Leadership */}
-              <div id="leadership" style={{ marginBottom: 48 }}>
-                <SectionLabel>Leadership</SectionLabel>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {LEADERSHIP.map((l) => (
-                    <div key={l.role} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 14 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-                        <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 13.5, color: "white" }}>{l.role}</div>
-                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: COLORS.teal }}>{l.dates}</div>
-                      </div>
-                      <div style={{ fontSize: 12, color: COLORS.slateMuted, marginTop: 2 }}>{l.org}</div>
-                      <div style={{ fontSize: 12.5, color: COLORS.slate, marginTop: 6, lineHeight: 1.5 }}>{l.desc}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Back to the agent */}
-              <div style={{ borderTop: `1px solid ${COLORS.border}`, paddingTop: 32, textAlign: "center" }}>
-                <SectionLabel>Have a specific question?</SectionLabel>
-                <button className="chip" onClick={() => heroScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })} style={{
-                  fontSize: 13, color: COLORS.amber, background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline",
-                }}>↑ Ask the AI agent at the top</button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div ref={scrollRef} style={{ flex: 1, minWidth: 0, overflowY: "auto", overflowX: "hidden", padding: "24px" }}>
-              <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", display: "flex", flexDirection: "column", gap: 20, boxSizing: "border-box" }}>
-                {messages.map((m, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start", minWidth: 0 }}>
-                    <div style={{
-                      maxWidth: "85%", background: m.role === "user" ? COLORS.amber : COLORS.bgCard,
-                      color: m.role === "user" ? COLORS.bg : COLORS.slate,
-                      padding: "10px 14px", borderRadius: 12, fontSize: 14.5, lineHeight: 1.6, whiteSpace: "pre-wrap",
-                      overflowWrap: "break-word", wordBreak: "break-word",
+                  {panelProject.demo && (
+                    <a href={panelProject.demo} target="_blank" rel="noreferrer" aria-label={`${panelProject.name} live demo (opens in new tab)`} style={{
+                      display: "inline-flex", alignItems: "center", gap: 6, fontSize: type.body, color: colors.teal, textDecoration: "none",
                     }}>
-                      {m.content}
-                    </div>
-                    {m.role === "assistant" && m.widget?.type === "projects" && (
-                      <div style={{ width: "85%" }}><ProjectsWidget names={m.widget.names} onOpen={setSidePanel} projects={projects} /></div>
-                    )}
-                    {m.role === "assistant" && m.widget?.type === "comparison" && (
-                      <div style={{ width: "85%" }}><ComparisonWidget names={m.widget.names} onOpen={setSidePanel} projects={projects} /></div>
-                    )}
-                    {m.role === "assistant" && m.widget?.type === "timeline" && (
-                      <div style={{ width: "85%" }}><TimelineWidget /></div>
-                    )}
-                    {m.role === "assistant" && m.widget?.type === "links" && (
-                      <div style={{ width: "85%" }}><LinksWidget /></div>
-                    )}
-                    {m.role === "assistant" && m.widget?.type === "posts" && (
-                      <div style={{ width: "85%" }}><PostsWidget /></div>
-                    )}
-                  </div>
-                ))}
-                {loading && <Loader2 size={16} className="animate-spin" color={COLORS.teal} />}
-              </div>
-            </div>
-            <div style={{ padding: "16px 24px 24px" }}>
-              <div style={{ maxWidth: 680, margin: "0 auto" }}>
-                <ChatInput input={input} setInput={setInput} onSend={() => send()} loading={loading} />
-              </div>
-            </div>
-          </>
-        )}
+                      Live Demo <ExternalLink size={13} aria-hidden="true" />
+                    </a>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
-
-      {panelProject && (
-        <div className="side-panel-backdrop" onClick={() => setSidePanel(null)} style={{ display: "none", position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 40 }} />
-      )}
-      {panelProject && (
-        <div className="side-panel" style={{ width: 340, borderLeft: `1px solid ${COLORS.border}`, background: COLORS.bgCard, padding: 24, overflowY: "auto", flexShrink: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: COLORS.teal }}>{panelProject.focus}</span>
-            <button onClick={() => setSidePanel(null)} style={{ background: "none", border: "none", color: COLORS.slateMuted, cursor: "pointer" }}><X size={18} /></button>
-          </div>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20, color: "white", marginTop: 8 }}>{panelProject.name}</h2>
-          <p style={{ fontSize: 13.5, color: COLORS.slate, lineHeight: 1.6, marginTop: 12 }}>{panelProject.desc}</p>
-          <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 11.5, color: COLORS.slateMuted, marginBottom: 6 }}>Stack</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {panelProject.stack.map((s) => (
-                <span key={s} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: COLORS.teal, background: "rgba(94,234,212,0.08)", padding: "3px 8px", borderRadius: 6 }}>{s}</span>
-              ))}
-            </div>
-          </div>
-          {panelProject.archFlow && (
-            <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 11.5, color: COLORS.slateMuted, marginBottom: 8 }}>Architecture</div>
-              <ArchDiagram flow={panelProject.archFlow} />
-            </div>
-          )}
-          {panelProject.caseStudy && (
-            <div style={{ marginTop: 20, borderTop: `1px solid ${COLORS.border}`, paddingTop: 16 }}>
-              <CaseStudy caseStudy={panelProject.caseStudy} />
-            </div>
-          )}
-          <a href={panelProject.link} target="_blank" rel="noreferrer" style={{
-            display: "inline-flex", alignItems: "center", gap: 6, marginTop: 20, fontSize: 13, color: COLORS.amber, textDecoration: "none",
-          }}>
-            View on GitHub <ExternalLink size={13} />
-          </a>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ChatInput({ input, setInput, onSend, loading, large, autoFocus, placeholder }) {
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 8, background: COLORS.bgCard,
-      border: `1px solid ${large ? COLORS.teal : COLORS.border}`, borderRadius: large ? 18 : 14,
-      padding: large ? "8px 8px 8px 20px" : "6px 6px 6px 16px",
-      boxShadow: large ? "0 8px 30px rgba(0,0,0,0.35)" : "none",
-    }}>
-      <Plus size={large ? 18 : 16} color={COLORS.slateMuted} />
-      <input
-        value={input}
-        autoFocus={autoFocus}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && onSend()}
-        placeholder={placeholder || "Ask about her projects, skills, or experience..."}
-        style={{ flex: 1, background: "none", border: "none", outline: "none", color: "white", fontSize: large ? 16 : 14, padding: large ? "14px 0" : "10px 0" }}
-      />
-      <button onClick={onSend} disabled={loading} style={{
-        width: large ? 42 : 34, height: large ? 42 : 34, borderRadius: large ? 13 : 10, background: COLORS.amber, border: "none",
-        display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
-      }}>
-        <Send size={large ? 18 : 15} color={COLORS.bg} />
-      </button>
-    </div>
+    </MotionConfig>
   );
 }
